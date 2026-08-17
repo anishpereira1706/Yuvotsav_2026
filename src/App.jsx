@@ -11,6 +11,7 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [search, setSearch] = useState('');
   const [ward, setWard] = useState('');
+  const [attendFilter, setAttendFilter] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -59,13 +60,14 @@ export default function App() {
     const q = search.toLowerCase().trim();
     return (data?.rows || []).filter((r) => {
       if (ward && (r.ward || '').trim() !== ward) return false;
+      if (attendFilter && r.attending !== attendFilter) return false;
       if (q) {
         const hay = `${r.name || ''} ${r.phone || ''} ${r.ward || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [data, search, ward]);
+  }, [data, search, ward, attendFilter]);
 
   const handleRefresh = () => fetchData();
 
@@ -108,20 +110,35 @@ export default function App() {
                 <span className="count-badge">{filtered.length} shown</span>
               </div>
 
-              <input
-                type="search"
-                className="search-input"
-                placeholder="Search name, phone or ward…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="search-row">
+                <input
+                  type="search"
+                  className="search-input"
+                  placeholder="Search name, phone or ward…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-              <div className="chips">
-                <button className={`chip ${ward === '' ? 'active' : ''}`} onClick={() => setWard('')}>
+              <div className="attend-toggle">
+                <button className={`attend-btn ${attendFilter === '' ? 'active' : ''}`} onClick={() => setAttendFilter('')}>
                   All
                 </button>
+                <button className={`attend-btn yes ${attendFilter === 'yes' ? 'active' : ''}`} onClick={() => setAttendFilter('yes')}>
+                  Attending
+                </button>
+                <button className={`attend-btn no ${attendFilter === 'no' ? 'active' : ''}`} onClick={() => setAttendFilter('no')}>
+                  Not attending
+                </button>
+              </div>
+
+              <div className="chips">
                 {wards.map((w) => (
-                  <button key={w} className={`chip ${ward === w ? 'active' : ''}`} onClick={() => setWard(w)}>
+                  <button
+                    key={w}
+                    className={`chip ${ward === w ? 'active' : ''}`}
+                    onClick={() => setWard(ward === w ? '' : w)}
+                  >
                     {w}
                   </button>
                 ))}
