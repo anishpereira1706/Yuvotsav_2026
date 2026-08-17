@@ -116,6 +116,10 @@ export default function App() {
           </>
         )}
       </main>
+
+      <footer className="footer">
+        © {new Date().getFullYear()} Anish Pereira
+      </footer>
     </div>
   );
 }
