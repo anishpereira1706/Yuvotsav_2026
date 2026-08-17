@@ -3,6 +3,7 @@ import CONFIG from './config';
 import StatCards from './components/StatCards';
 import WardProgress from './components/WardProgress';
 import RegistrationList from './components/RegistrationList';
+import NotStartedWards from './components/NotStartedWards';
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -39,6 +40,20 @@ export default function App() {
     });
     return Object.keys(set).sort((a, b) => a.localeCompare(b));
   }, [data]);
+
+  const wardsWithData = useMemo(() => {
+    const set = new Set();
+    (data?.rows || []).forEach((r) => {
+      const w = (r.ward || '').trim();
+      if (w) set.add(w.toLowerCase());
+    });
+    return set;
+  }, [data]);
+
+  const pendingWards = useMemo(() => {
+    const known = (data?.wards && data.wards.length ? data.wards : CONFIG.WARDS) || [];
+    return known.filter((w) => !wardsWithData.has(String(w).trim().toLowerCase()));
+  }, [data, wardsWithData]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -84,9 +99,10 @@ export default function App() {
         {data && (
           <>
             <StatCards stats={data.stats} total={data.total} />
+            <NotStartedWards pending={pendingWards} />
             <WardProgress wards={data.stats.wards} />
 
-            <section className="panel">
+            <section className="panel list-panel">
               <div className="panel-head">
                 <h2 className="panel-title">Registrations</h2>
                 <span className="count-badge">{filtered.length} shown</span>

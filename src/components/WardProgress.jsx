@@ -2,7 +2,7 @@ export default function WardProgress({ wards }) {
   const entries = Object.entries(wards || {});
   if (!entries.length) {
     return (
-      <section className="panel">
+      <section className="panel ward-panel">
         <h2 className="panel-title">Ward-wise Progress</h2>
         <p className="empty">No ward data yet.</p>
       </section>
@@ -13,7 +13,7 @@ export default function WardProgress({ wards }) {
   const max = Math.max(...sorted.map(([, v]) => v.total), 1);
 
   return (
-    <section className="panel">
+    <section className="panel ward-panel">
       <h2 className="panel-title">Ward-wise Progress</h2>
       <div className="ward-grid">
         {sorted.map(([name, info]) => {

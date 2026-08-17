@@ -243,6 +243,44 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- Not-started wards ---------- */
+.pending-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 13px 16px;
+  margin-bottom: 16px;
+}
+
+.pending-icon { font-size: 18px; line-height: 1.4; }
+
+.pending-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.pending-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fff;
+  border: 1px solid #fde68a;
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+
 /* ---------- Panels ---------- */
 .panel {
   background: var(--card);
@@ -528,4 +566,51 @@ body {
 @media (min-width: 640px) {
   .stats { grid-template-columns: repeat(4, 1fr); }
   .container { padding: 26px 20px 40px; }
+}
+
+@media (min-width: 900px) {
+  .page { max-width: 1320px; }
+
+  .topbar-inner { padding: 14px 36px 10px; }
+  .topbar-inner.sub { padding: 8px 36px 12px; }
+
+  .container {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) 1fr;
+    gap: 18px;
+    align-items: start;
+    padding: 28px 36px 48px;
+  }
+
+  .banner,
+  .stats,
+  .pending-card { grid-column: 1 / -1; margin-bottom: 0; }
+
+  .stat-num { font-size: 40px; }
+
+  .ward-panel {
+    position: sticky;
+    top: 162px;
+    max-height: calc(100vh - 182px);
+    overflow-y: auto;
+    margin-bottom: 0;
+  }
+
+  .ward-panel .ward-grid { grid-template-columns: 1fr; }
+
+  .list-panel { margin-bottom: 0; }
+
+  .chips { flex-wrap: wrap; }
+
+  .footer { padding: 12px 36px 32px; }
+}
+
+@media (min-width: 1200px) {
+  .list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+@media (hover: hover) {
+  .card:hover { border-color: var(--purple); box-shadow: 0 0 0 1px var(--purple), var(--glow); }
+  .action-btn:hover { background: var(--purple-soft); border-color: var(--purple); color: var(--purple-deep); }
+  .chip:hover { border-color: var(--purple); color: var(--purple-deep); }
 }

@@ -34,6 +34,7 @@ function doGet(e) {
   }
 
   var stats = buildStats(rows);
+  var wards = getWardList();
 
   var payload = {
     success: true,
@@ -41,10 +42,77 @@ function doGet(e) {
     sheetName: ss.getName(),
     total: rows.length,
     stats: stats,
+    wards: wards,
     rows: rows
   };
 
   return jsonResponse(payload);
+}
+
+// Full ward list: first try the Google Form's Ward question (the single
+// source of truth for all wards), then fall back to a "Wards" tab in the
+// spreadsheet if one exists. Used to spot wards that haven't started yet.
+// Every step is guarded so a failure here can never break the API.
+function getWardList() {
+  try {
+    return getWardChoicesFromForm() || getWardsFromSheet() || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function getWardChoicesFromForm() {
+  try {
+    var url = SpreadsheetApp.getActiveSpreadsheet().getFormUrl();
+    if (!url) return null;
+    var form = FormApp.openByUrl(url);
+
+    var items = form.getItems();
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var title = String(item.getTitle() || '').toLowerCase();
+      if (title.indexOf('ward') === -1) continue;
+
+      var choices = null;
+      var type = item.getType();
+      if (type === FormApp.ItemType.LIST) {
+        choices = item.asListItem().getChoices();
+      } else if (type === FormApp.ItemType.MULTIPLE_CHOICE) {
+        choices = item.asChoiceItem().getChoices();
+      }
+      if (!choices || !choices.length) continue;
+
+      var names = [];
+      for (var j = 0; j < choices.length; j++) {
+        names.push(choices[j].getValue());
+      }
+      return names;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
+function getWardsFromSheet() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var tabNames = ['Wards', 'Ward List', 'Ward'];
+    for (var i = 0; i < tabNames.length; i++) {
+      var sheet = ss.getSheetByName(tabNames[i]);
+      if (!sheet) continue;
+      var values = sheet.getDataRange().getValues();
+      var out = [];
+      for (var j = 0; j < values.length; j++) {
+        var v = clean(values[j][0]);
+        if (v) out.push(v);
+      }
+      return out;
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
 }
 
 function getSheet() {
