@@ -11,7 +11,7 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [search, setSearch] = useState('');
   const [ward, setWard] = useState('');
-  const [attendFilter, setAttendFilter] = useState('');
+  const [attendFilter, setAttendFilter] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -58,12 +58,19 @@ export default function App() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
+    const searching = q.length >= 2;
     return (data?.rows || []).filter((r) => {
+      if ((attendFilter === null || attendFilter === undefined) && !searching) return false;
       if (ward && (r.ward || '').trim() !== ward) return false;
-      if (attendFilter && r.attending !== attendFilter) return false;
-      if (q) {
-        const hay = `${r.name || ''} ${r.phone || ''} ${r.ward || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+      if ((attendFilter === 'yes' || attendFilter === 'no') && r.attending !== attendFilter) return false;
+      if (searching) {
+        const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+        const words = `${r.name || ''} ${r.ward || ''} ${r.phone || ''}`
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+        const match = tokens.every((t) => words.some((w) => w.startsWith(t)));
+        if (!match) return false;
       }
       return true;
     });
@@ -72,7 +79,28 @@ export default function App() {
   const handleRefresh = () => fetchData();
 
   return (
-    <div className="page">
+    <>
+      <div className="wave-bg" aria-hidden="true">
+        <svg className="wave wave-1" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <g className="wave-group">
+            <path d="M0,224C120,160,240,160,360,224C480,288,600,288,720,224C840,160,960,160,1080,224C1200,288,1320,288,1440,224L1440,320L0,320Z" fill="rgba(124,58,237,0.10)"/>
+            <path transform="translate(1440 0)" d="M0,224C120,160,240,160,360,224C480,288,600,288,720,224C840,160,960,160,1080,224C1200,288,1320,288,1440,224L1440,320L0,320Z" fill="rgba(124,58,237,0.10)"/>
+          </g>
+        </svg>
+        <svg className="wave wave-2" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <g className="wave-group">
+            <path d="M0,192C120,128,240,128,360,192C480,256,600,256,720,192C840,128,960,128,1080,192C1200,256,1320,256,1440,192L1440,320L0,320Z" fill="rgba(139,92,246,0.12)"/>
+            <path transform="translate(1440 0)" d="M0,192C120,128,240,128,360,192C480,256,600,256,720,192C840,128,960,128,1080,192C1200,256,1320,256,1440,192L1440,320L0,320Z" fill="rgba(139,92,246,0.12)"/>
+          </g>
+        </svg>
+        <svg className="wave wave-3" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <g className="wave-group">
+            <path d="M0,208C150,160,250,160,400,208C550,256,650,256,800,208C950,160,1050,160,1200,208C1300,240,1380,240,1440,208L1440,320L0,320Z" fill="rgba(109,40,217,0.14)"/>
+            <path transform="translate(1440 0)" d="M0,208C150,160,250,160,400,208C550,256,650,256,800,208C950,160,1050,160,1200,208C1300,240,1380,240,1440,208L1440,320L0,320Z" fill="rgba(109,40,217,0.14)"/>
+          </g>
+        </svg>
+      </div>
+
       <header className="topbar">
         <div className="topbar-inner">
           <div>
@@ -91,7 +119,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="container">
+      <div className="page">
+        <main className="container">
         {error && (
           <div className="banner error">
             <strong>Could not load data:</strong> {error}
@@ -121,27 +150,31 @@ export default function App() {
               </div>
 
               <div className="attend-toggle">
-                <button className={`attend-btn ${attendFilter === '' ? 'active' : ''}`} onClick={() => setAttendFilter('')}>
+                <button className={`attend-btn ${attendFilter === 'all' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'all' ? null : 'all')}>
                   All
                 </button>
-                <button className={`attend-btn yes ${attendFilter === 'yes' ? 'active' : ''}`} onClick={() => setAttendFilter('yes')}>
+                <button className={`attend-btn yes ${attendFilter === 'yes' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'yes' ? null : 'yes')}>
                   Attending
                 </button>
-                <button className={`attend-btn no ${attendFilter === 'no' ? 'active' : ''}`} onClick={() => setAttendFilter('no')}>
+                <button className={`attend-btn no ${attendFilter === 'no' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'no' ? null : 'no')}>
                   Not attending
                 </button>
               </div>
 
               <div className="chips">
-                {wards.map((w) => (
-                  <button
-                    key={w}
-                    className={`chip ${ward === w ? 'active' : ''}`}
-                    onClick={() => setWard(ward === w ? '' : w)}
-                  >
-                    {w}
-                  </button>
-                ))}
+{wards.map((w) => (
+                      <button
+                        key={w}
+                        className={`chip ${ward === w ? 'active' : ''}`}
+                        onClick={() => {
+                          const next = ward === w ? '' : w;
+                          setWard(next);
+                          if (next) setAttendFilter('all');
+                        }}
+                      >
+                        {w}
+                      </button>
+                    ))}
               </div>
 
               <RegistrationList rows={filtered} />
@@ -150,10 +183,12 @@ export default function App() {
         )}
       </main>
 
-      <footer className="footer">
-        © {new Date().getFullYear()} Anish Pereira
-      </footer>
-    </div>
+        <footer className="footer">
+          <div className="foot-brand">Yuvotsav <span className="foot-accent">2026</span></div>
+          <div className="foot-copy">© {new Date().getFullYear()} Anish Pereira</div>
+        </footer>
+      </div>
+    </>
   );
 }
 
