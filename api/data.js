@@ -1,0 +1,33 @@
+import { getDb, buildStats, getWards } from './lib/db.js';
+
+export default async function handler(req, res) {
+  try {
+    const db = await getDb();
+    const regs = await db.collection('registrations').find({}).toArray();
+
+    const rows = regs.map((r) => ({
+      name: r.name || '',
+      phone: r.phone || '',
+      ward: r.ward || '',
+      attending: r.attending || 'no',
+      reason: r.reason || '',
+      paid: r.paid || '',
+      paidMethod: r.paidMethod || '',
+      checkedIn: !!r.checkedIn,
+    }));
+
+    const stats = buildStats(rows);
+    const wards = await getWards(db);
+
+    res.status(200).json({
+      success: true,
+      updatedAt: new Date().toISOString(),
+      total: rows.length,
+      stats,
+      wards,
+      rows,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}

@@ -15,7 +15,7 @@ export default function App() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(CONFIG.SCRIPT_URL + '?cache=' + Date.now());
+      const res = await fetch(CONFIG.API_BASE + '/api/data?cache=' + Date.now());
       if (!res.ok) throw new Error('Request failed (' + res.status + ')');
       const payload = await res.json();
       if (!payload || payload.success !== true) throw new Error('Unexpected server response.');
