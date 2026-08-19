@@ -119,6 +119,8 @@ body {
 .topbar-inner.sub {
   padding: 10px 20px 16px;
   border-top: 1px solid var(--purple-line);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .brand-kicker {
@@ -713,4 +715,170 @@ body {
   .card:hover { border-color: var(--purple); box-shadow: 0 0 0 1px var(--purple), var(--glow); }
   .action-btn:hover { background: var(--purple-soft); border-color: var(--purple); color: var(--purple-deep); }
   .chip:hover { border-color: var(--purple); color: var(--purple-deep); }
+}
+
+/* ---------- Nav ---------- */
+.nav { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.nav-btn {
+  border: 1px solid var(--purple-line);
+  background: #fff;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn.active {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--glow);
+}
+
+/* ---------- Landing ---------- */
+.landing {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+}
+
+.hero { text-align: center; max-width: 620px; }
+
+.hero-title {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.hero-title .accent {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: italic;
+}
+
+.hero-sub {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.landing-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 24px;
+  border: none;
+  border-radius: 20px;
+  background: var(--grad);
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--glow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing-card:active { transform: scale(0.97); }
+
+.lc-icon { font-size: 30px; }
+.lc-title { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+.lc-desc { font-size: 12px; opacity: 0.85; }
+
+/* ---------- Registration Desk ---------- */
+.desk { grid-column: 1 / -1; }
+
+.btn-primary {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--grad);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--glow);
+}
+
+.btn-primary:active { transform: scale(0.98); }
+
+.login-sub { font-size: 13px; color: var(--muted); margin: 8px 0 16px; }
+.login-hint { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; }
+
+.desk-login .panel { max-width: 380px; margin: 20px auto; }
+.desk-login form { display: flex; flex-direction: column; gap: 10px; }
+
+.desk-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.desk-user { font-weight: 600; font-size: 14px; color: var(--ink); }
+
+.banner.ok {
+  background: var(--yes-bg);
+  color: var(--yes);
+  border: 1px solid rgba(21, 128, 61, 0.2);
+}
+
+.desk-card { flex-wrap: wrap; align-items: center; }
+
+.desk-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+.desk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.action-btn.big {
+  width: auto;
+  padding: 0 14px;
+  height: 38px;
+  font-weight: 600;
+}
+
+.action-btn.pay-cash { background: var(--yes-bg); color: var(--yes); border-color: rgba(21, 128, 61, 0.3); }
+.action-btn.pay-gpay { background: var(--purple-soft); color: var(--purple-deep); border-color: var(--purple-line); }
+.action-btn:disabled { opacity: 0.5; cursor: default; }
+
+.walkin { margin-top: 16px; }
+.walkin-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+
+.pay-options { display: flex; gap: 8px; }
+.pay-options .action-btn { flex: 1; }
+.pay-options .action-btn.on { background: var(--grad); color: #fff; border-color: transparent; }
+
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+
+@media (min-width: 640px) {
+  .landing-cards { grid-template-columns: 1fr 1fr; }
+  .desk .stats { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (hover: hover) {
+  .nav-btn:hover { border-color: var(--purple); color: var(--purple-deep); }
+  .landing-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(124, 58, 237, 0.35); }
 }

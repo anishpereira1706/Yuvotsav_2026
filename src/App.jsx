@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import CONFIG from './config';
 import StatCards from './components/StatCards';
 import WardProgress from './components/WardProgress';
 import RegistrationList from './components/RegistrationList';
 import NotStartedWards from './components/NotStartedWards';
+import Landing from './Landing';
+import Desk from './Desk';
+
+const VIEWS = {
+  landing: 'landing',
+  tracker: 'tracker',
+  desk: 'desk',
+};
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -12,6 +20,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [ward, setWard] = useState('');
   const [attendFilter, setAttendFilter] = useState(null);
+  const [view, setView] = useState(VIEWS.landing);
 
   const fetchData = useCallback(async () => {
     try {
@@ -77,6 +86,7 @@ export default function App() {
   }, [data, search, ward, attendFilter]);
 
   const handleRefresh = () => fetchData();
+  const brandSub = view === VIEWS.landing ? 'Choose a view' : view === VIEWS.desk ? 'Registration Desk' : 'Live Registration Tracker';
 
   return (
     <>
@@ -106,82 +116,101 @@ export default function App() {
           <div>
             <div className="brand-kicker">Yuvotsav</div>
             <div className="brand-name">2026 <span className="accent">·</span> Youth Day</div>
-            <div className="brand-sub">Live Registration Tracker</div>
+            <div className="brand-sub">{brandSub}</div>
           </div>
-          <div className={`live-pill ${error ? 'off' : ''}`}>
-            <span className="dot" />
-            {error ? 'OFFLINE' : 'LIVE'}
-          </div>
+          {view === VIEWS.tracker && (
+            <div className={`live-pill ${error ? 'off' : ''}`}>
+              <span className="dot" />
+              {error ? 'OFFLINE' : 'LIVE'}
+            </div>
+          )}
         </div>
         <div className="topbar-inner sub">
-          <div className="updated">{lastUpdated ? `Updated ${formatTime(lastUpdated)}` : 'Loading…'}</div>
-          <button className="refresh-btn" onClick={handleRefresh} aria-label="Refresh now">↻</button>
+          <div className="nav">
+            <button className={`nav-btn ${view === VIEWS.landing ? 'active' : ''}`} onClick={() => setView(VIEWS.landing)}>🏠 Home</button>
+            <button className={`nav-btn ${view === VIEWS.tracker ? 'active' : ''}`} onClick={() => setView(VIEWS.tracker)}>📊 Tracker</button>
+            <button className={`nav-btn ${view === VIEWS.desk ? 'active' : ''}`} onClick={() => setView(VIEWS.desk)}>🗂️ Desk</button>
+          </div>
+          {view === VIEWS.tracker && (
+            <>
+              <div className="updated">{lastUpdated ? `Updated ${formatTime(lastUpdated)}` : 'Loading…'}</div>
+              <button className="refresh-btn" onClick={handleRefresh} aria-label="Refresh now">↻</button>
+            </>
+          )}
         </div>
       </header>
 
       <div className="page">
         <main className="container">
-        {error && (
-          <div className="banner error">
-            <strong>Could not load data:</strong> {error}
-          </div>
-        )}
+          {view === VIEWS.landing && <Landing onSelect={setView} />}
 
-        {data && (
-          <>
-            <StatCards stats={data.stats} total={data.total} />
-            <NotStartedWards pending={pendingWards} />
-            <WardProgress wards={data.stats.wards} />
+          {view === VIEWS.tracker && (
+            <>
+              {error && (
+                <div className="banner error">
+                  <strong>Could not load data:</strong> {error}
+                </div>
+              )}
 
-            <section className="panel list-panel">
-              <div className="panel-head">
-                <h2 className="panel-title">Registrations</h2>
-                <span className="count-badge">{filtered.length} shown</span>
-              </div>
+              {data && (
+                <>
+                  <StatCards stats={data.stats} total={data.total} />
+                  <NotStartedWards pending={pendingWards} />
+                  <WardProgress wards={data.stats.wards} />
 
-              <div className="search-row">
-                <input
-                  type="search"
-                  className="search-input"
-                  placeholder="Search name, phone or ward…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+                  <section className="panel list-panel">
+                    <div className="panel-head">
+                      <h2 className="panel-title">Registrations</h2>
+                      <span className="count-badge">{filtered.length} shown</span>
+                    </div>
 
-              <div className="attend-toggle">
-                <button className={`attend-btn ${attendFilter === 'all' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'all' ? null : 'all')}>
-                  All
-                </button>
-                <button className={`attend-btn yes ${attendFilter === 'yes' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'yes' ? null : 'yes')}>
-                  Attending
-                </button>
-                <button className={`attend-btn no ${attendFilter === 'no' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'no' ? null : 'no')}>
-                  Not attending
-                </button>
-              </div>
+                    <div className="search-row">
+                      <input
+                        type="search"
+                        className="search-input"
+                        placeholder="Search name, phone or ward…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                    </div>
 
-              <div className="chips">
-{wards.map((w) => (
-                      <button
-                        key={w}
-                        className={`chip ${ward === w ? 'active' : ''}`}
-                        onClick={() => {
-                          const next = ward === w ? '' : w;
-                          setWard(next);
-                          if (next) setAttendFilter('all');
-                        }}
-                      >
-                        {w}
+                    <div className="attend-toggle">
+                      <button className={`attend-btn ${attendFilter === 'all' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'all' ? null : 'all')}>
+                        All
                       </button>
-                    ))}
-              </div>
+                      <button className={`attend-btn yes ${attendFilter === 'yes' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'yes' ? null : 'yes')}>
+                        Attending
+                      </button>
+                      <button className={`attend-btn no ${attendFilter === 'no' ? 'active' : ''}`} onClick={() => setAttendFilter(attendFilter === 'no' ? null : 'no')}>
+                        Not attending
+                      </button>
+                    </div>
 
-              <RegistrationList rows={filtered} />
-            </section>
-          </>
-        )}
-      </main>
+                    <div className="chips">
+                      {wards.map((w) => (
+                        <button
+                          key={w}
+                          className={`chip ${ward === w ? 'active' : ''}`}
+                          onClick={() => {
+                            const next = ward === w ? '' : w;
+                            setWard(next);
+                            if (next) setAttendFilter('all');
+                          }}
+                        >
+                          {w}
+                        </button>
+                      ))}
+                    </div>
+
+                    <RegistrationList rows={filtered} />
+                  </section>
+                </>
+              )}
+            </>
+          )}
+
+          {view === VIEWS.desk && <Desk />}
+        </main>
 
         <footer className="footer">
           <div className="foot-brand">Yuvotsav <span className="foot-accent">2026</span></div>
