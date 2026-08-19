@@ -20,6 +20,11 @@ var DESK_HEADERS = [
 ];
 
 function doGet(e) {
+  // ?sync=1 -> mirror MongoDB check-in / payment status back into Sheet 2.
+  if (e && e.parameter && e.parameter.sync === '1') {
+    return jsonResponse(pullAll());
+  }
+
   var ss = getSheet();
   var data = ss.getDataRange().getValues();
   var headers = data[0].map(function (h) { return String(h).trim(); });
@@ -434,6 +439,45 @@ function rebuildDeskSheet() {
     sheet.getRange(2, 1, rows.length, DESK_HEADERS.length).setValues(rows);
   }
   sortDeskSheet();
+}
+
+// Pull check-in / payment status from MongoDB (via Vercel /api/sync-back) and
+// rebuild Sheet 2. Preserves every registration, updating the desk columns.
+function pullAll() {
+  if (!CONFIG.WEBHOOK_URL || CONFIG.WEBHOOK_URL.indexOf('your-project') !== -1) {
+    return { success: false, error: 'Set CONFIG.WEBHOOK_URL first.' };
+  }
+  var syncUrl = CONFIG.WEBHOOK_URL.replace('/form-submit', '/sync-back');
+  var resp = UrlFetchApp.fetch(syncUrl, { muteHttpExceptions: true });
+  var code = resp.getResponseCode();
+  if (code !== 200) {
+    return { success: false, error: 'sync-back HTTP ' + code + ' ' + resp.getContentText() };
+  }
+  var data = JSON.parse(resp.getContentText());
+
+  var rows = (data.rows || []).map(function (r) {
+    var attending = r.attending === 'yes';
+    return [
+      r.name,
+      r.phone,
+      r.ward,
+      r.attending === 'yes' ? 'Yes' : (r.attending === 'no' ? 'No' : ''),
+      r.reason || '',
+      r.checkedIn ? 'Yes' : '',
+      r.paid === 'yes' ? 'Paid' : (attending ? 'Pending' : ''),
+      r.paidMethod || ''
+    ];
+  });
+
+  var sheet = ensureDeskSheet();
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearContent();
+  sheet.getRange(1, 1, 1, DESK_HEADERS.length).setValues([DESK_HEADERS]);
+  if (rows.length) {
+    sheet.getRange(2, 1, rows.length, DESK_HEADERS.length).setValues(rows);
+  }
+  sortDeskSheet();
+
+  return { success: true, total: rows.length };
 }
 
 function jsonResponse(obj) {

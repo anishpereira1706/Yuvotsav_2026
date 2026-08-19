@@ -21,6 +21,21 @@ export default function App() {
   const [ward, setWard] = useState('');
   const [attendFilter, setAttendFilter] = useState(null);
   const [view, setView] = useState(VIEWS.landing);
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('yuvotsav_user')) || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const handleLogin = (u) => {
+    setUser(u);
+    try {
+      if (u) sessionStorage.setItem('yuvotsav_user', JSON.stringify(u));
+      else sessionStorage.removeItem('yuvotsav_user');
+    } catch (e) {}
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -209,7 +224,7 @@ export default function App() {
             </>
           )}
 
-          {view === VIEWS.desk && <Desk />}
+          {view === VIEWS.desk && <Desk user={user} onLogin={handleLogin} data={data} refresh={fetchData} />}
         </main>
 
         <footer className="footer">

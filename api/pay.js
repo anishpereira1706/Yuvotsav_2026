@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const phone = cleanPhone(b.phone);
     const method = String(b.method || '').toLowerCase();
     if (!phone) return res.status(400).json({ success: false, error: 'Missing phone' });
-    if (method !== 'cash' && method !== 'gpay') {
+    if (method !== 'cash' && method !== 'gpay' && method !== 'pending') {
       return res.status(400).json({ success: false, error: 'Invalid method' });
     }
 
@@ -21,19 +21,29 @@ export default async function handler(req, res) {
     const existing = await db.collection('registrations').findOne({ phone });
     if (!existing) return res.status(404).json({ success: false, error: 'Not found' });
 
+    const isPending = method === 'pending';
     await db.collection('registrations').updateOne(
       { phone },
-      {
-        $set: {
-          paid: 'yes',
-          paidMethod: method,
-          paidAt: new Date(),
-          paidBy: String(b.volunteer || '').trim(),
-        },
-      }
+      isPending
+        ? {
+            $set: {
+              paid: '',
+              paidMethod: '',
+              paidAt: null,
+              paidBy: '',
+            },
+          }
+        : {
+            $set: {
+              paid: 'yes',
+              paidMethod: method,
+              paidAt: new Date(),
+              paidBy: String(b.volunteer || '').trim(),
+            },
+          }
     );
 
-    res.status(200).json({ success: true, paid: 'yes', paidMethod: method });
+    res.status(200).json({ success: true, paid: isPending ? '' : 'yes', paidMethod: isPending ? '' : method });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

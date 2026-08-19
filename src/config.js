@@ -1,10 +1,14 @@
 export default {
-  // Base URL for the Vercel serverless API. Set to the deployed site so both the
-  // hosted app and local dev (npm run dev) hit the same backend.
-  API_BASE: 'https://yuvotsav-2026.vercel.app',
+  // Same-origin API. Locally, `vercel dev` serves both the app and /api functions
+  // (localhost:3000). In production, Vercel serves both on the same domain.
+  API_BASE: '',
 
   // Google Apps Script URL — kept as a legacy fallback / reference only.
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwNG41AUrAob2B3o6A3tI0KwkvBZSnUZM96XDUZmtdyMiOPfqOJmeKcCtcTMajHu1PiDw/exec',
+
+  // Apps Script web app used for Sheet 2 sync (?sync=1). Must match the
+  // deployment you re-publish after editing appscript.gs.
+  SHEET_SYNC_URL: 'https://script.google.com/macros/s/AKfycbwNG41AUrAob2B3o6A3tI0KwkvBZSnUZM96XDUZmtdyMiOPfqOJmeKcCtcTMajHu1PiDw/exec',
 
   REFRESH_SECONDS: 30,
 
