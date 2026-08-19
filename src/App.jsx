@@ -101,6 +101,17 @@ export default function App() {
   }, [data, search, ward, attendFilter]);
 
   const handleRefresh = () => fetchData();
+
+  // Optimistically apply a desk mutation to local data so the UI updates
+  // instantly; the next server refresh reconciles any drift.
+  const applyLocalPatch = useCallback((rowId, patch) => {
+    setData((prev) => {
+      if (!prev || !Array.isArray(prev.rows)) return prev;
+      const rows = prev.rows.map((r) => (r._id === rowId ? { ...r, ...patch } : r));
+      return { ...prev, rows, total: rows.length, stats: computeStats(rows) };
+    });
+  }, []);
+
   const brandSub = view === VIEWS.landing ? 'Choose a view' : view === VIEWS.desk ? 'Registration Desk' : 'Live Registration Tracker';
 
   return (
@@ -224,7 +235,7 @@ export default function App() {
             </>
           )}
 
-          {view === VIEWS.desk && <Desk user={user} onLogin={handleLogin} data={data} refresh={fetchData} />}
+          {view === VIEWS.desk && <Desk user={user} onLogin={handleLogin} data={data} refresh={fetchData} applyLocalPatch={applyLocalPatch} />}
         </main>
 
         <footer className="footer">
@@ -238,4 +249,20 @@ export default function App() {
 
 function formatTime(d) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function computeStats(rows) {
+  const stats = { total: rows.length, attending: 0, notAttending: 0, unknown: 0, wards: {} };
+  rows.forEach((r) => {
+    const a = r.attending;
+    if (a === 'yes') stats.attending++;
+    else if (a === 'no') stats.notAttending++;
+    else stats.unknown++;
+    if (r.ward) {
+      if (!stats.wards[r.ward]) stats.wards[r.ward] = { total: 0, attending: 0 };
+      stats.wards[r.ward].total++;
+      if (a === 'yes') stats.wards[r.ward].attending++;
+    }
+  });
+  return stats;
 }

@@ -1,4 +1,4 @@
-import { getDb, cleanPhone } from './lib/db.js';
+import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Admin-only: clear a check-in (e.g. marked the wrong person).
@@ -13,8 +13,9 @@ export default async function handler(req, res) {
     const adminName = String(b.adminName || '').trim();
     const adminPassword = String(b.adminPassword || '');
     const phone = cleanPhone(b.phone);
-    if (!phone) return res.status(400).json({ success: false, error: 'Missing phone' });
+    if (!b.id && !phone) return res.status(400).json({ success: false, error: 'Missing id or phone' });
     if (!adminName || !adminPassword) return res.status(401).json({ success: false, error: 'Admin credentials required' });
+    const filter = idOrPhone(b.id, phone);
 
     const db = await getDb();
     const admin = await db.collection('volunteers').findOne({ name: adminName });
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
     }
 
     const result = await db.collection('registrations').updateOne(
-      { phone },
+      filter,
       {
         $set: {
           checkedIn: false,

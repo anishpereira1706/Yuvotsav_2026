@@ -28,12 +28,12 @@ export function addVolunteer(payload) {
   return request('/api/volunteers', { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function checkin(phone, volunteer) {
-  return request('/api/checkin', { method: 'POST', body: JSON.stringify({ phone, volunteer }) });
+export function checkin(id, phone, volunteer) {
+  return request('/api/checkin', { method: 'POST', body: JSON.stringify({ id, phone, volunteer }) });
 }
 
-export function pay(phone, method, volunteer) {
-  return request('/api/pay', { method: 'POST', body: JSON.stringify({ phone, method, volunteer }) });
+export function pay(id, phone, method, volunteer) {
+  return request('/api/pay', { method: 'POST', body: JSON.stringify({ id, phone, method, volunteer }) });
 }
 
 export function walkin(payload) {

@@ -5,7 +5,7 @@ import SuccessOverlay from './SuccessOverlay';
 
 const WARDS = CONFIG.WARDS;
 
-export default function Desk({ user, onLogin, data, refresh }) {
+export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loginErr, setLoginErr] = useState('');
@@ -57,9 +57,11 @@ export default function Desk({ user, onLogin, data, refresh }) {
   }
 
   async function doUndoCheckin(row) {
+    if (applyLocalPatch) applyLocalPatch(row._id, { checkedIn: false, checkedInBy: '' });
+    setSuccessMsg('Check-in undone');
+    setSuccess(true);
     try {
-      await api.undoCheckin({ phone: row.phone, adminName: user.name, adminPassword: user.password });
-      flash('Check-in undone for ' + (row.name || '').trim());
+      await api.undoCheckin({ id: row._id, phone: row.phone, adminName: user.name, adminPassword: user.password });
       refresh();
     } catch (err) {
       flash('Error: ' + err.message);
@@ -172,26 +174,44 @@ export default function Desk({ user, onLogin, data, refresh }) {
       onUndo={doUndoCheckin}
       onClose={() => setSelected(null)}
       onSave={async (method, checkIn) => {
+        const target = selected;
+        const isPending = method === 'pending';
+        const currentlyPaid = target.paid === 'yes';
+        const willPay =
+          (!isPending && (!currentlyPaid || target.paidMethod !== method)) ||
+          (isPending && currentlyPaid);
+        const willCheckin = checkIn && !target.checkedIn;
+
+        setSelected(null);
+        if (willCheckin) { setSuccessMsg('Checked in!'); setSuccess(true); }
+        else if (selectedFrom === 'payments' && willPay) { setSuccessMsg('Payment updated!'); setSuccess(true); }
+        else flash('Saved: ' + target.name);
+
+        if (applyLocalPatch) {
+          const patch = {};
+          if (willPay) {
+            patch.paid = isPending ? '' : 'yes';
+            patch.paidMethod = isPending ? '' : method;
+          }
+          if (willCheckin) {
+            patch.checkedIn = true;
+            patch.checkedInBy = user.name;
+          }
+          applyLocalPatch(target._id, patch);
+        }
+
         try {
-          const isPending = method === 'pending';
-          const currentlyPaid = selected.paid === 'yes';
-          let paymentChanged = false;
-          if (!isPending && (!currentlyPaid || selected.paidMethod !== method)) {
-            await api.pay(selected.phone, method, user.name);
-            paymentChanged = true;
+          const jobs = [];
+          if (!isPending && (!currentlyPaid || target.paidMethod !== method)) {
+            jobs.push(api.pay(target._id, target.phone, method, user.name));
           } else if (isPending && currentlyPaid) {
-            await api.pay(selected.phone, 'pending', user.name);
-            paymentChanged = true;
+            jobs.push(api.pay(target._id, target.phone, 'pending', user.name));
           }
-          const wasCheckedIn = selected.checkedIn;
-          if (checkIn && !wasCheckedIn) {
-            await api.checkin(selected.phone, user.name);
+          if (willCheckin) {
+            jobs.push(api.checkin(target._id, target.phone, user.name));
           }
-          setSelected(null);
+          await Promise.all(jobs);
           refresh();
-          if (checkIn && !wasCheckedIn) { setSuccessMsg('Checked in!'); setSuccess(true); }
-          else if (selectedFrom === 'payments' && paymentChanged) { setSuccessMsg('Payment updated!'); setSuccess(true); }
-          else flash('Saved: ' + selected.name);
         } catch (err) {
           flash('Error: ' + err.message);
         }
@@ -512,7 +532,7 @@ function DeskModal({ row, volunteer, isAdmin, updateMode, onUndo, onClose, onSav
         <button className="btn-primary" disabled={checkedIn && !updateMode} onClick={() => onSave(method, updateMode ? false : !checkedIn)}>
           {updateMode ? 'Update' : (checkedIn ? 'Checked in ✓' : 'Check in')}
         </button>
-        {checkedIn && isAdmin && (
+        {checkedIn && isAdmin && !updateMode && (
           <button className="btn-ghost" onClick={() => { onUndo(row); onClose(); }}>
             Undo check-in
           </button>

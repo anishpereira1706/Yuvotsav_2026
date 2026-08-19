@@ -1,7 +1,8 @@
-import { getDb, cleanPhone } from './lib/db.js';
+import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Mark a person as paid, recording the method (cash / gpay) and who/when.
+// Matches the exact row when an id is provided (handles duplicate phones).
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);
   applyCors(res);
@@ -12,18 +13,19 @@ export default async function handler(req, res) {
     const b = req.body || {};
     const phone = cleanPhone(b.phone);
     const method = String(b.method || '').toLowerCase();
-    if (!phone) return res.status(400).json({ success: false, error: 'Missing phone' });
+    if (!b.id && !phone) return res.status(400).json({ success: false, error: 'Missing id or phone' });
     if (method !== 'cash' && method !== 'gpay' && method !== 'pending') {
       return res.status(400).json({ success: false, error: 'Invalid method' });
     }
+    const filter = idOrPhone(b.id, phone);
 
     const db = await getDb();
-    const existing = await db.collection('registrations').findOne({ phone });
+    const existing = await db.collection('registrations').findOne(filter);
     if (!existing) return res.status(404).json({ success: false, error: 'Not found' });
 
     const isPending = method === 'pending';
     await db.collection('registrations').updateOne(
-      { phone },
+      filter,
       isPending
         ? {
             $set: {

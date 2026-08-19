@@ -3,6 +3,11 @@ import lottie from 'lottie-web';
 
 export default function SuccessOverlay({ show, message, onDone }) {
   const ref = useRef(null);
+  const onDoneRef = useRef(onDone);
+
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     if (!show || !ref.current) return;
@@ -13,12 +18,12 @@ export default function SuccessOverlay({ show, message, onDone }) {
       autoplay: true,
       path: '/Done.json',
     });
-    const t = setTimeout(onDone, 2200);
+    const t = setTimeout(() => onDoneRef.current(), 2200);
     return () => {
       anim.destroy();
       clearTimeout(t);
     };
-  }, [show, onDone]);
+  }, [show]);
 
   if (!show) return null;
 

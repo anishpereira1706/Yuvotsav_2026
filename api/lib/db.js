@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const dbName = process.env.MONGODB_DB || 'yuvotsav2026';
@@ -15,6 +15,17 @@ export async function getDb() {
 
 export function cleanPhone(v) {
   return String(v == null ? '' : v).replace(/[^\d+]/g, '');
+}
+
+// Match a registration by its exact _id when provided (handles duplicate
+// phones with different name spellings); falls back to phone.
+export function idOrPhone(id, phone) {
+  if (id) {
+    try {
+      return { _id: new ObjectId(id) };
+    } catch (e) {}
+  }
+  return { phone };
 }
 
 export function isYes(v) {

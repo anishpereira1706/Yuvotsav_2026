@@ -9,6 +9,7 @@ export default async function handler(req, res) {
     const regs = await db.collection('registrations').find({}).toArray();
 
     const rows = regs.map((r) => ({
+      _id: String(r._id),
       name: r.name || '',
       phone: r.phone || '',
       ward: r.ward || '',
