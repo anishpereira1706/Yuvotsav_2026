@@ -1,6 +1,7 @@
 import { getDb, cleanPhone, isYes } from './lib/db.js';
 
 // Webhook called by Apps Script onFormSubmit when a new form response arrives.
+// Each submission becomes its own document (duplicates are kept, like the raw sheet).
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'POST only' });
@@ -13,33 +14,25 @@ export default async function handler(req, res) {
     }
 
     const db = await getDb();
-    const attending = isYes(b.attending) ? 'yes' : (String(b.attending || '').trim() ? 'no' : 'no');
+    const attending = isYes(b.attending) ? 'yes' : 'no';
 
-    await db.collection('registrations').updateOne(
-      { phone },
-      {
-        $set: {
-          name: String(b.name || '').trim(),
-          ward: String(b.ward || '').trim(),
-          attending,
-          reason: String(b.reason || '').trim(),
-          updatedAt: new Date(),
-        },
-        $setOnInsert: {
-          phone,
-          paid: '',
-          paidMethod: '',
-          paidAt: null,
-          paidBy: '',
-          checkedIn: false,
-          checkedInAt: null,
-          checkedInBy: '',
-          walkIn: false,
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
+    await db.collection('registrations').insertOne({
+      name: String(b.name || '').trim(),
+      phone,
+      ward: String(b.ward || '').trim(),
+      attending,
+      reason: String(b.reason || '').trim(),
+      paid: '',
+      paidMethod: '',
+      paidAt: null,
+      paidBy: '',
+      checkedIn: false,
+      checkedInAt: null,
+      checkedInBy: '',
+      walkIn: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     res.status(200).json({ success: true });
   } catch (err) {
