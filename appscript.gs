@@ -275,25 +275,63 @@ function pushToWebhook(row) {
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
-    UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
+    var resp = UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
+    var code = resp.getResponseCode();
+    if (code >= 200 && code < 300) {
+      Logger.log('OK ' + row.phone + ' -> ' + code);
+    } else {
+      Logger.log('FAIL ' + row.phone + ' -> ' + code + ' ' + resp.getContentText());
+    }
+    return code;
   } catch (err) {
-    Logger.log('pushToWebhook error: ' + err);
+    Logger.log('pushToWebhook error for ' + row.phone + ': ' + err);
+    return -1;
   }
 }
 
-// ONE-TIME: push every existing form response into MongoDB (via the webhook).
-// Run this once after setting up the webhook to backfill current data.
+// ONE-TIME: push every existing form response into MongoDB via ONE bulk call.
+// More reliable than pushAllToWebhook (no per-call burst failures).
+function pushAllBulk() {
+  var data = getSheet().getDataRange().getValues();
+  var col = mapColumns(data[0]);
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = buildRowFromValues(data[i], col);
+    if (!row.phone && !row.name) continue;
+    rows.push(row);
+  }
+  if (!CONFIG.WEBHOOK_URL || CONFIG.WEBHOOK_URL.indexOf('your-project') !== -1) {
+    Logger.log('Set CONFIG.WEBHOOK_URL first.');
+    return;
+  }
+  var bulkUrl = CONFIG.WEBHOOK_URL.replace('/form-submit', '/bulk-import');
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({ rows: rows }),
+    muteHttpExceptions: true
+  };
+  var resp = UrlFetchApp.fetch(bulkUrl, options);
+  var code = resp.getResponseCode();
+  Logger.log('Bulk import -> ' + code + ' ' + resp.getContentText());
+}
+
+// ONE-TIME (legacy): push each form response individually. Slower / less reliable
+// than pushAllBulk; kept only as a fallback.
 function pushAllToWebhook() {
   var data = getSheet().getDataRange().getValues();
   var col = mapColumns(data[0]);
   var pushed = 0;
+  var failed = 0;
   for (var i = 1; i < data.length; i++) {
     var row = buildRowFromValues(data[i], col);
     if (!row.phone && !row.name) continue;
-    pushToWebhook(row);
-    pushed++;
+    var code = pushToWebhook(row);
+    if (code >= 200 && code < 300) pushed++;
+    else failed++;
+    Utilities.sleep(200);
   }
-  Logger.log('Pushed ' + pushed + ' registrations to MongoDB.');
+  Logger.log('Pushed ' + pushed + ', failed ' + failed + '.');
 }
 
 // Create the "Desk Data" sheet if it doesn't exist, with headers.
