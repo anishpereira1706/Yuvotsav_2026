@@ -4,6 +4,7 @@ import StatCards from './components/StatCards';
 import WardProgress from './components/WardProgress';
 import RegistrationList from './components/RegistrationList';
 import NotStartedWards from './components/NotStartedWards';
+import Desk from './Desk';
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -12,6 +13,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [ward, setWard] = useState('');
   const [attendFilter, setAttendFilter] = useState(null);
+  const [view, setView] = useState('tracker');
 
   const fetchData = useCallback(async () => {
     try {
@@ -114,13 +116,21 @@ export default function App() {
           </div>
         </div>
         <div className="topbar-inner sub">
+          <div className="nav">
+            <button className={`nav-btn ${view === 'tracker' ? 'active' : ''}`} onClick={() => setView('tracker')}>📊 Tracker</button>
+            <button className={`nav-btn ${view === 'desk' ? 'active' : ''}`} onClick={() => setView('desk')}>🗂️ Desk</button>
+          </div>
           <div className="updated">{lastUpdated ? `Updated ${formatTime(lastUpdated)}` : 'Loading…'}</div>
           <button className="refresh-btn" onClick={handleRefresh} aria-label="Refresh now">↻</button>
         </div>
       </header>
 
       <div className="page">
-        <main className="container">
+        <main className={view === 'desk' ? 'container desk-wrap' : 'container'}>
+        {view === 'desk' && <Desk />}
+
+        {view === 'tracker' && (
+        <>
         {error && (
           <div className="banner error">
             <strong>Could not load data:</strong> {error}
@@ -180,6 +190,8 @@ export default function App() {
               <RegistrationList rows={filtered} />
             </section>
           </>
+        )}
+        </>
         )}
       </main>
 
