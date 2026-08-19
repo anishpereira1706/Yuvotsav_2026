@@ -127,9 +127,9 @@ export default function App() {
         </div>
         <div className="topbar-inner sub">
           <div className="nav">
-            <button className={`nav-btn ${view === VIEWS.landing ? 'active' : ''}`} onClick={() => setView(VIEWS.landing)}>🏠 Home</button>
-            <button className={`nav-btn ${view === VIEWS.tracker ? 'active' : ''}`} onClick={() => setView(VIEWS.tracker)}>📊 Tracker</button>
-            <button className={`nav-btn ${view === VIEWS.desk ? 'active' : ''}`} onClick={() => setView(VIEWS.desk)}>🗂️ Desk</button>
+            <button className={`nav-btn ${view === VIEWS.landing ? 'active' : ''}`} onClick={() => setView(VIEWS.landing)}>Home</button>
+            <button className={`nav-btn ${view === VIEWS.tracker ? 'active' : ''}`} onClick={() => setView(VIEWS.tracker)}>Tracker</button>
+            <button className={`nav-btn ${view === VIEWS.desk ? 'active' : ''}`} onClick={() => setView(VIEWS.desk)}>Desk</button>
           </div>
           {view === VIEWS.tracker && (
             <>

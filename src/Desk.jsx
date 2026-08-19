@@ -125,7 +125,7 @@ export default function Desk() {
       {msg && <div className="banner ok">{msg}</div>}
 
       <div className="desk-top">
-        <span className="desk-user">👤 {user.name}</span>
+        <span className="desk-user">{user.name}</span>
         <button className="refresh-btn" onClick={load} title="Refresh">↻</button>
       </div>
 
