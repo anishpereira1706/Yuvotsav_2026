@@ -2,6 +2,9 @@ var CONFIG = {
   SHEET_NAME: null,
   SHEET_ID: null,
   DESK_SHEET: 'Desk Data',
+  // Vercel /api/form-submit webhook. Set to your deployed Vercel domain, e.g.
+  // https://your-project.vercel.app/api/form-submit
+  WEBHOOK_URL: 'https://yuvotsav-2026.vercel.app/api/form-submit',
   COLUMNS: {
     NAME: 'Name',
     PHONE: 'Mobile Number',
@@ -236,18 +239,61 @@ function onFormSubmit(e) {
     if (!values.length) return;
     var headers = getSheet().getDataRange().getValues()[0];
     var col = mapColumns(headers);
-    var row = {
-      ward: clean(values[col.WARD]),
-      name: clean(values[col.NAME]),
-      phone: cleanPhone(values[col.PHONE]),
-      attending: isYes(clean(values[col.ATTENDING])) ? 'Yes' : 'No',
-      reason: clean(values[col.REASON])
-    };
+    var row = buildRowFromValues(values, col);
     if (!row.phone && !row.name) return;
     upsertDeskRow(row);
+    pushToWebhook(row);
   } catch (err) {
     Logger.log('onFormSubmit error: ' + err);
   }
+}
+
+function buildRowFromValues(values, col) {
+  return {
+    ward: clean(values[col.WARD]),
+    name: clean(values[col.NAME]),
+    phone: cleanPhone(values[col.PHONE]),
+    attending: isYes(clean(values[col.ATTENDING])) ? 'Yes' : 'No',
+    reason: clean(values[col.REASON])
+  };
+}
+
+// Push the new registration to the Vercel /api/form-submit webhook -> MongoDB.
+function pushToWebhook(row) {
+  try {
+    if (!CONFIG.WEBHOOK_URL || CONFIG.WEBHOOK_URL.indexOf('your-project') !== -1) return;
+    var payload = {
+      name: row.name,
+      phone: row.phone,
+      ward: row.ward,
+      attending: row.attending,
+      reason: row.reason
+    };
+    var options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
+  } catch (err) {
+    Logger.log('pushToWebhook error: ' + err);
+  }
+}
+
+// ONE-TIME: push every existing form response into MongoDB (via the webhook).
+// Run this once after setting up the webhook to backfill current data.
+function pushAllToWebhook() {
+  var data = getSheet().getDataRange().getValues();
+  var col = mapColumns(data[0]);
+  var pushed = 0;
+  for (var i = 1; i < data.length; i++) {
+    var row = buildRowFromValues(data[i], col);
+    if (!row.phone && !row.name) continue;
+    pushToWebhook(row);
+    pushed++;
+  }
+  Logger.log('Pushed ' + pushed + ' registrations to MongoDB.');
 }
 
 // Create the "Desk Data" sheet if it doesn't exist, with headers.
