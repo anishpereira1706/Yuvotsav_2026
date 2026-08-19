@@ -1,7 +1,10 @@
 import { getDb, cleanPhone } from './lib/db.js';
+import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Add a walk-in registration (not from the form). Optionally auto-check-in.
 export default async function handler(req, res) {
+  if (isPreflight(req)) return sendPreflight(res);
+  applyCors(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'POST only' });
   }

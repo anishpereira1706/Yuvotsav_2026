@@ -1,8 +1,11 @@
 import { getDb, cleanPhone, isYes } from './lib/db.js';
+import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Webhook called by Apps Script onFormSubmit when a new form response arrives.
 // Each submission becomes its own document (duplicates are kept, like the raw sheet).
 export default async function handler(req, res) {
+  if (isPreflight(req)) return sendPreflight(res);
+  applyCors(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'POST only' });
   }

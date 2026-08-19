@@ -1,7 +1,10 @@
 import { getDb } from './lib/db.js';
+import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Verify a volunteer's password against the volunteers collection (server-side).
 export default async function handler(req, res) {
+  if (isPreflight(req)) return sendPreflight(res);
+  applyCors(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'POST only' });
   }
