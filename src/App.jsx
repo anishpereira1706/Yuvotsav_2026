@@ -70,7 +70,16 @@ export default function App() {
   useEffect(() => {
     fetchData();
     const id = setInterval(fetchData, CONFIG.REFRESH_SECONDS * 1000);
-    return () => clearInterval(id);
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [fetchData]);
 
   const wards = useMemo(() => {
