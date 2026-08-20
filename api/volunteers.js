@@ -1,6 +1,6 @@
-import { getDb } from './lib/db.js';
-import { requireVolunteer, isSuperAdmin, SUPER_ADMIN } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb } from '../server/lib/db.js';
+import { requireVolunteer, isSuperAdmin, SUPER_ADMIN } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // GET  /api/volunteers  -> list volunteers (name, role, active)
 // POST /api/volunteers  -> admin creates a volunteer (role: volunteer | admin)

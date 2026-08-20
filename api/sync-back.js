@@ -1,6 +1,6 @@
-import { getDb } from './lib/db.js';
-import { requireAppKey } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb } from '../server/lib/db.js';
+import { requireAppKey } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // GET /api/sync-back — returns every registration shaped for the Desk Data
 // sheet (Sheet 2). Consumed by the Apps Script pullAll() to mirror MongoDB

@@ -1,6 +1,6 @@
-import { getDb, cleanPhone, isYes } from './lib/db.js';
-import { requireWebhookKey } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone, isYes } from '../server/lib/db.js';
+import { requireWebhookKey } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Webhook called by Apps Script onFormSubmit when a new form response arrives.
 // Each submission becomes its own document (duplicates are kept, like the raw sheet).

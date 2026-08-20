@@ -1,6 +1,6 @@
-import { getDb, cleanPhone } from './lib/db.js';
-import { requireVolunteer } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone } from '../server/lib/db.js';
+import { requireVolunteer } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Add a walk-in registration (not from the form). Optionally auto-check-in.
 export default async function handler(req, res) {

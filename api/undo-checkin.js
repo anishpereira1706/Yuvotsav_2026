@@ -1,6 +1,6 @@
-import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
-import { requireVolunteer } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone, idOrPhone } from '../server/lib/db.js';
+import { requireVolunteer } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Admin-only: clear a check-in (e.g. marked the wrong person).
 export default async function handler(req, res) {

@@ -1,6 +1,6 @@
-import { getDb } from './lib/db.js';
-import { createSession } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb } from '../server/lib/db.js';
+import { createSession } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Verify a volunteer's password against the volunteers collection (server-side)
 // and issue a session token for desk mutations.

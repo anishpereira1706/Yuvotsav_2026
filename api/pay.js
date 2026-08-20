@@ -1,6 +1,6 @@
-import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
-import { requireVolunteer } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone, idOrPhone } from '../server/lib/db.js';
+import { requireVolunteer } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Mark a person as paid, recording the method (cash / gpay) and who/when.
 // Matches the exact row when an id is provided (handles duplicate phones).

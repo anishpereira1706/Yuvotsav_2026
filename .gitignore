@@ -8,3 +8,5 @@ dist
 .env*
 *.log
 devlog.txt
+
+devlog-err.txt

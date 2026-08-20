@@ -1,6 +1,6 @@
-import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
-import { requireVolunteer } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone, idOrPhone } from '../server/lib/db.js';
+import { requireVolunteer } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Mark a person as checked in. Matches the exact row when an id is provided
 // (handles duplicate phones); falls back to phone. Guarded against double check-in.

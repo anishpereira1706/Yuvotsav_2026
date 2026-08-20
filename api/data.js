@@ -1,6 +1,6 @@
-import { getDb, buildStats, getWards } from './lib/db.js';
-import { requireAppKey } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, buildStats, getWards } from '../server/lib/db.js';
+import { requireAppKey } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);

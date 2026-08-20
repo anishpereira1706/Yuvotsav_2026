@@ -1,6 +1,6 @@
-import { getDb, cleanPhone, isYes } from './lib/db.js';
-import { requireWebhookKey } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb, cleanPhone, isYes } from '../server/lib/db.js';
+import { requireWebhookKey } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Bulk import: insert every row as its own document (duplicates are kept).
 // Used by the Apps Script one-time backfill so all responses appear in the tracker.

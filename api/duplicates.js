@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from './lib/db.js';
-import { requireVolunteer } from './lib/auth.js';
-import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
+import { getDb } from '../server/lib/db.js';
+import { requireVolunteer } from '../server/lib/auth.js';
+import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Admin-only duplicate management.
 //  POST { action: 'delete', id }
