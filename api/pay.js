@@ -1,4 +1,5 @@
 import { getDb, cleanPhone, idOrPhone } from './lib/db.js';
+import { requireVolunteer } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Mark a person as paid, recording the method (cash / gpay) and who/when.
@@ -10,6 +11,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'POST only' });
   }
   try {
+    const session = await requireVolunteer(req, res);
+    if (!session) return;
     const b = req.body || {};
     const phone = cleanPhone(b.phone);
     const method = String(b.method || '').toLowerCase();

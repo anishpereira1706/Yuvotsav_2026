@@ -5,6 +5,8 @@ var CONFIG = {
   // Vercel /api/form-submit webhook. Set to your deployed Vercel domain, e.g.
   // https://your-project.vercel.app/api/form-submit
   WEBHOOK_URL: 'https://yuvotsav-2026.vercel.app/api/form-submit',
+  // Shared secret — must match the WEBHOOK_KEY env var on Vercel.
+  WEBHOOK_KEY: 'e170e59a41b0231f75944198a132a51c80c7610134925cf4',
   COLUMNS: {
     NAME: 'Name',
     PHONE: 'Mobile Number',
@@ -277,6 +279,7 @@ function pushToWebhook(row) {
     var options = {
       method: 'post',
       contentType: 'application/json',
+      headers: { 'x-webhook-key': CONFIG.WEBHOOK_KEY },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
@@ -313,6 +316,7 @@ function pushAllBulk() {
   var options = {
     method: 'post',
     contentType: 'application/json',
+    headers: { 'x-webhook-key': CONFIG.WEBHOOK_KEY },
     payload: JSON.stringify({ rows: rows }),
     muteHttpExceptions: true
   };
@@ -448,7 +452,10 @@ function pullAll() {
     return { success: false, error: 'Set CONFIG.WEBHOOK_URL first.' };
   }
   var syncUrl = CONFIG.WEBHOOK_URL.replace('/form-submit', '/sync-back');
-  var resp = UrlFetchApp.fetch(syncUrl, { muteHttpExceptions: true });
+  var resp = UrlFetchApp.fetch(syncUrl, {
+    headers: { 'x-app-key': 'yv26-desk-7f3k' },
+    muteHttpExceptions: true
+  });
   var code = resp.getResponseCode();
   if (code !== 200) {
     return { success: false, error: 'sync-back HTTP ' + code + ' ' + resp.getContentText() };

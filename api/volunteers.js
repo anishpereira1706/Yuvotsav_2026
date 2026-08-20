@@ -1,4 +1,5 @@
 import { getDb } from './lib/db.js';
+import { requireVolunteer } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // GET  /api/volunteers  -> list volunteer names (no passwords)
@@ -23,21 +24,15 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
+      const session = await requireVolunteer(req, res, { admin: true });
+      if (!session) return;
       const b = req.body || {};
-      const adminName = String(b.adminName || '').trim();
-      const adminPassword = String(b.adminPassword || '');
       const name = String(b.name || '').trim();
       const password = String(b.password || '').trim() || 'yuvotsav2026';
 
       if (!name) return res.status(400).json({ success: false, error: 'Missing volunteer name' });
-      if (!adminName || !adminPassword) return res.status(401).json({ success: false, error: 'Admin credentials required' });
 
       const db = await getDb();
-      const admin = await db.collection('volunteers').findOne({ name: adminName });
-      if (!admin || admin.role !== 'admin' || admin.password !== adminPassword) {
-        return res.status(401).json({ success: false, error: 'Not authorized' });
-      }
-
       const existing = await db.collection('volunteers').findOne({ name });
       if (existing) return res.status(409).json({ success: false, error: 'Volunteer already exists' });
 

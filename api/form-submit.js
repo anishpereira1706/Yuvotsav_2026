@@ -1,8 +1,10 @@
 import { getDb, cleanPhone, isYes } from './lib/db.js';
+import { requireWebhookKey } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Webhook called by Apps Script onFormSubmit when a new form response arrives.
 // Each submission becomes its own document (duplicates are kept, like the raw sheet).
+// Requires the WEBHOOK_KEY shared secret.
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);
   applyCors(res);
@@ -10,6 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'POST only' });
   }
   try {
+    if (!requireWebhookKey(req, res)) return;
     const b = req.body || {};
     const phone = cleanPhone(b.phone);
     if (!phone && !b.name) {

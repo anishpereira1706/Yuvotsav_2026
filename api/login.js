@@ -1,7 +1,9 @@
 import { getDb } from './lib/db.js';
+import { createSession } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
-// Verify a volunteer's password against the volunteers collection (server-side).
+// Verify a volunteer's password against the volunteers collection (server-side)
+// and issue a session token for desk mutations.
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);
   applyCors(res);
@@ -20,7 +22,9 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, error: 'Invalid name or password' });
     }
 
-    res.status(200).json({ success: true, name: vol.name, role: vol.role || 'volunteer' });
+    const token = await createSession(vol.name, vol.role || 'volunteer');
+
+    res.status(200).json({ success: true, name: vol.name, role: vol.role || 'volunteer', token });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -61,7 +61,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
     setSuccessMsg('Check-in undone');
     setSuccess(true);
     try {
-      await api.undoCheckin({ id: row._id, phone: row.phone, adminName: user.name, adminPassword: user.password });
+      await api.undoCheckin({ id: row._id, phone: row.phone });
       refresh();
     } catch (err) {
       flash('Error: ' + err.message);
@@ -585,8 +585,6 @@ function AdminVolunteers({ user, volunteers, onAdded, flash }) {
     e.preventDefault();
     try {
       await api.addVolunteer({
-        adminName: user.name,
-        adminPassword: user.password,
         name: f.name,
         password: f.password,
       });

@@ -1,8 +1,10 @@
 import { getDb, cleanPhone, isYes } from './lib/db.js';
+import { requireWebhookKey } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Bulk import: insert every row as its own document (duplicates are kept).
 // Used by the Apps Script one-time backfill so all responses appear in the tracker.
+// Requires the WEBHOOK_KEY shared secret.
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);
   applyCors(res);
@@ -10,6 +12,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'POST only' });
   }
   try {
+    if (!requireWebhookKey(req, res)) return;
     const b = req.body || {};
     const rows = Array.isArray(b.rows) ? b.rows : [];
     if (!rows.length) return res.status(400).json({ success: false, error: 'No rows' });

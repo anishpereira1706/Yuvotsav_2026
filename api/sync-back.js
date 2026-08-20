@@ -1,4 +1,5 @@
 import { getDb } from './lib/db.js';
+import { requireAppKey } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // GET /api/sync-back — returns every registration shaped for the Desk Data
@@ -10,6 +11,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'GET only' });
   }
+  if (!requireAppKey(req, res)) return;
   try {
     const db = await getDb();
     const docs = await db.collection('registrations').find({}).toArray();

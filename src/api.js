@@ -2,9 +2,20 @@ import CONFIG from './config';
 
 const BASE = CONFIG.API_BASE;
 
+export const APP_KEY = 'yv26-desk-7f3k';
+
+function authHeaders() {
+  const h = { 'x-app-key': APP_KEY };
+  try {
+    const u = JSON.parse(sessionStorage.getItem('yuvotsav_user'));
+    if (u && u.token) h.authorization = 'Bearer ' + u.token;
+  } catch (e) {}
+  return h;
+}
+
 async function request(path, options) {
   const res = await fetch(BASE + path, {
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...authHeaders() },
     ...options,
   });
   const data = await res.json().catch(() => ({}));
@@ -13,7 +24,9 @@ async function request(path, options) {
 }
 
 export function fetchData() {
-  return fetch(BASE + '/api/data?cache=' + Date.now()).then((r) => r.json());
+  return fetch(BASE + '/api/data?cache=' + Date.now(), {
+    headers: { 'x-app-key': APP_KEY },
+  }).then((r) => r.json());
 }
 
 export function login(name, password) {
@@ -21,7 +34,9 @@ export function login(name, password) {
 }
 
 export function volunteers() {
-  return fetch(BASE + '/api/volunteers?cache=' + Date.now()).then((r) => r.json());
+  return fetch(BASE + '/api/volunteers?cache=' + Date.now(), {
+    headers: { 'x-app-key': APP_KEY },
+  }).then((r) => r.json());
 }
 
 export function addVolunteer(payload) {

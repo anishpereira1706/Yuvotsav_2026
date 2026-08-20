@@ -1,4 +1,5 @@
 import { getDb, cleanPhone } from './lib/db.js';
+import { requireVolunteer } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 // Add a walk-in registration (not from the form). Optionally auto-check-in.
@@ -9,6 +10,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'POST only' });
   }
   try {
+    const session = await requireVolunteer(req, res);
+    if (!session) return;
     const b = req.body || {};
     const phone = cleanPhone(b.phone);
     const name = String(b.name || '').trim();

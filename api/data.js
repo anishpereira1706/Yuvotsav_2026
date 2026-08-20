@@ -1,9 +1,11 @@
 import { getDb, buildStats, getWards } from './lib/db.js';
+import { requireAppKey } from './lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from './lib/cors.js';
 
 export default async function handler(req, res) {
   if (isPreflight(req)) return sendPreflight(res);
   applyCors(res);
+  if (!requireAppKey(req, res)) return;
   try {
     const db = await getDb();
     const regs = await db.collection('registrations').find({}).toArray();

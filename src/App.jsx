@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import CONFIG from './config';
+import { APP_KEY } from './api';
 import StatCards from './components/StatCards';
 import WardProgress from './components/WardProgress';
 import RegistrationList from './components/RegistrationList';
@@ -39,7 +40,9 @@ export default function App() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(CONFIG.API_BASE + '/api/data?cache=' + Date.now());
+      const res = await fetch(CONFIG.API_BASE + '/api/data?cache=' + Date.now(), {
+        headers: { 'x-app-key': APP_KEY },
+      });
       if (!res.ok) throw new Error('Request failed (' + res.status + ')');
       const payload = await res.json();
       if (!payload || payload.success !== true) throw new Error('Unexpected server response.');
