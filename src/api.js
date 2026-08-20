@@ -43,6 +43,10 @@ export function addVolunteer(payload) {
   return request('/api/volunteers', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export function updateVolunteer(payload) {
+  return request('/api/volunteers', { method: 'POST', body: JSON.stringify({ action: 'update', ...payload }) });
+}
+
 export function checkin(id, phone, volunteer) {
   return request('/api/checkin', { method: 'POST', body: JSON.stringify({ id, phone, volunteer }) });
 }
@@ -57,4 +61,12 @@ export function walkin(payload) {
 
 export function undoCheckin(payload) {
   return request('/api/undo-checkin', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function deleteDuplicate(id) {
+  return request('/api/duplicates', { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
+}
+
+export function mergeDuplicates(keeperId, removeIds) {
+  return request('/api/duplicates', { method: 'POST', body: JSON.stringify({ action: 'merge', keeperId, removeIds }) });
 }

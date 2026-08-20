@@ -29,11 +29,23 @@ export async function requireVolunteer(req, res, opts) {
     res.status(401).json({ success: false, error: 'Not authorized' });
     return null;
   }
+  const db = await getDb();
+  const vol = await db.collection('volunteers').findOne({ name: session.name });
+  if (!vol || vol.active === false) {
+    res.status(403).json({ success: false, error: 'Account deactivated' });
+    return null;
+  }
   if (opts && opts.admin && session.role !== 'admin') {
     res.status(401).json({ success: false, error: 'Admin only' });
     return null;
   }
-  return session;
+  return { ...session, role: vol.role || session.role };
+}
+
+export const SUPER_ADMIN = 'Anish Pereira';
+
+export function isSuperAdmin(name) {
+  return name === SUPER_ADMIN;
 }
 
 export function requireWebhookKey(req, res) {

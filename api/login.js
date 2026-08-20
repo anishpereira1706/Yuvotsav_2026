@@ -21,6 +21,9 @@ export default async function handler(req, res) {
     if (!vol || vol.password !== password) {
       return res.status(401).json({ success: false, error: 'Invalid name or password' });
     }
+    if (vol.active === false) {
+      return res.status(403).json({ success: false, error: 'Account deactivated' });
+    }
 
     const token = await createSession(vol.name, vol.role || 'volunteer');
 

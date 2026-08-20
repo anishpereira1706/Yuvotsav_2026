@@ -21,7 +21,14 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [ward, setWard] = useState('');
   const [attendFilter, setAttendFilter] = useState(null);
-  const [view, setView] = useState(VIEWS.landing);
+  const [view, setView] = useState(() => {
+    try {
+      const v = sessionStorage.getItem('yuvotsav_view');
+      return v === 'tracker' || v === 'desk' ? v : VIEWS.landing;
+    } catch (e) {
+      return VIEWS.landing;
+    }
+  });
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem('yuvotsav_user')) || null;
@@ -37,6 +44,12 @@ export default function App() {
       else sessionStorage.removeItem('yuvotsav_user');
     } catch (e) {}
   };
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('yuvotsav_view', view);
+    } catch (e) {}
+  }, [view]);
 
   const fetchData = useCallback(async () => {
     try {

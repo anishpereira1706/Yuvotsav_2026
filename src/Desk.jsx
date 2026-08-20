@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CONFIG from './config';
 import * as api from './api';
 import SuccessOverlay from './SuccessOverlay';
 
 const WARDS = CONFIG.WARDS;
+
+const SUPER_ADMIN = 'Anish Pereira';
 
 export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) {
   const [name, setName] = useState('');
@@ -18,6 +20,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
   const [selectedFrom, setSelectedFrom] = useState('find');
   const [success, setSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [confirm, setConfirm] = useState(null);
   const [tab, setTab] = useState('find');
   const [adminSection, setAdminSection] = useState('find');
 
@@ -224,6 +227,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
       { id: 'find', label: 'Find person' },
       { id: 'checkedin', label: 'Checked in' },
       { id: 'payments', label: 'Payments' },
+      { id: 'duplicates', label: 'Duplicates' },
       { id: 'volunteers', label: 'Volunteers' },
       { id: 'data', label: 'Data & Backup' },
     ];
@@ -233,8 +237,11 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
         <div className="admin-shell">
           <aside className="admin-sidebar">
             <div className="admin-sidebar-head">
-              <span className="desk-user">{user.name}</span>
-              <span className="badge yes">Admin</span>
+              <span className="admin-avatar">{getInitials(user.name)}</span>
+              <div className="admin-head-meta">
+                <span className="admin-head-name">{user.name}</span>
+                <span className="admin-head-role">Administrator</span>
+              </div>
             </div>
             <nav className="admin-nav">
               {adminNav.map((item) => (
@@ -261,12 +268,32 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
             )}
             {adminSection === 'checkedin' && <CheckedInTab rows={rows} canUndo onUndo={doUndoCheckin} />}
             {adminSection === 'payments' && <PaymentsTab rows={rows} onOpen={(r) => { setSelectedFrom('payments'); setSelected(r); }} />}
-            {adminSection === 'volunteers' && <AdminVolunteers user={user} volunteers={volunteers} onAdded={loadVolunteers} flash={flash} />}
+            {adminSection === 'duplicates' && (
+              <AdminDuplicates
+                rows={rows}
+                refresh={refresh}
+                flash={flash}
+                askConfirm={setConfirm}
+                onSuccess={(m) => { setSuccessMsg(m); setSuccess(true); }}
+              />
+            )}
+            {adminSection === 'volunteers' && (
+              <AdminVolunteers
+                user={user}
+                volunteers={volunteers}
+                onAdded={loadVolunteers}
+                onPatch={(name, patch) => setVolunteers((prev) => prev.map((v) => (v.name === name ? { ...v, ...patch } : v)))}
+                onAdd={(v) => setVolunteers((prev) => [...prev, v])}
+                flash={flash}
+                onSuccess={(m) => { setSuccessMsg(m); setSuccess(true); }}
+              />
+            )}
             {adminSection === 'data' && <AdminData rows={rows} flash={flash} />}
           </main>
         </div>
         {deskModal}
-<SuccessOverlay show={success} message={successMsg} onDone={() => setSuccess(false)} />
+        <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+        <SuccessOverlay show={success} message={successMsg} onDone={() => setSuccess(false)} />
       </div>
     );
   }
@@ -343,28 +370,49 @@ function MiniTime(d) {
 }
 
 function CheckedInTab({ rows, canUndo, onUndo }) {
+  const [mode, setMode] = useState('checkedin');
   const [q, setQ] = useState('');
+  const [wardF, setWardF] = useState('');
   const query = q.toLowerCase().trim();
-  const list = rows
-    .filter((r) => r.checkedIn)
+
+  const checkedIn = rows.filter((r) => r.checkedIn);
+  const notChecked = rows.filter((r) => !r.checkedIn && r.attending === 'yes');
+  const base = mode === 'checkedin' ? checkedIn : notChecked;
+
+  const list = base
     .filter((r) => {
       if (!query) return true;
       const words = `${r.name || ''} ${r.ward || ''} ${r.phone || ''}`.toLowerCase().split(/\s+/).filter(Boolean);
       return query.split(/\s+/).filter(Boolean).every((t) => words.some((w) => w.startsWith(t)));
     })
+    .filter((r) => !wardF || (r.ward || '').trim() === wardF)
     .sort((a, b) => new Date(b.checkedInAt || 0) - new Date(a.checkedInAt || 0));
 
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2 className="panel-title">Checked in</h2>
-        <span className="count-badge">{list.length}</span>
+        <h2 className="panel-title">Check-ins</h2>
+        <div className="seg">
+          <button className={`seg-btn ${mode === 'checkedin' ? 'on' : ''}`} onClick={() => setMode('checkedin')}>Checked in · {checkedIn.length}</button>
+          <button className={`seg-btn ${mode === 'pending' ? 'on' : ''}`} onClick={() => setMode('pending')}>Not checked in · {notChecked.length}</button>
+        </div>
       </div>
-      <div className="search-row">
+      <div className="pay-filters">
         <input type="search" className="search-input" placeholder="Search name or phone…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="pay-filter-row">
+          <span className="filter-label">Ward</span>
+          <div className="chips">
+            <button className={`chip ${wardF === '' ? 'active' : ''}`} onClick={() => setWardF('')}>All</button>
+            {WARDS.map((w) => (
+              <button key={w} className={`chip ${wardF === w ? 'active' : ''}`} onClick={() => setWardF(wardF === w ? '' : w)}>{w}</button>
+            ))}
+          </div>
+        </div>
       </div>
       {list.length === 0 ? (
-        <p className="empty-hint">No one checked in yet.</p>
+        <p className="empty-hint">
+          {query || wardF ? 'No matches for these filters.' : mode === 'checkedin' ? 'No one checked in yet.' : 'Everyone is checked in!'}
+        </p>
       ) : (
         <div className="list">
           {list.map((r, i) => (
@@ -379,8 +427,8 @@ function CheckedInTab({ rows, canUndo, onUndo }) {
               </div>
               <div className="mini-right">
                 {r.paid === 'yes' ? <span className="badge yes">Paid</span> : <span className="badge unknown">Unpaid</span>}
-                <span className="mini-time">{MiniTime(r.checkedInAt)}</span>
-                {canUndo && <button className="undo-btn" onClick={() => onUndo(r)}>Undo</button>}
+                {r.checkedIn ? <span className="mini-time">{MiniTime(r.checkedInAt)}</span> : null}
+                {canUndo && r.checkedIn && <button className="undo-btn" onClick={() => onUndo(r)}>Undo</button>}
               </div>
             </div>
           ))}
@@ -578,44 +626,276 @@ function NameSelect({ value, options, onChange }) {
   );
 }
 
-function AdminVolunteers({ user, volunteers, onAdded, flash }) {
-  const [f, setF] = useState({ name: '', password: '' });
+function WardSelect({ value, options, onChange }) {
+  const [open, setOpen] = useState(false);
 
-  async function submit(e) {
-    e.preventDefault();
-    try {
-      await api.addVolunteer({
-        name: f.name,
-        password: f.password,
-      });
-      flash('Volunteer added: ' + f.name);
-      setF({ name: '', password: '' });
-      onAdded();
-    } catch (err) {
-      flash('Error: ' + err.message);
+  return (
+    <div className="ns">
+      <button type="button" className={`ns-btn ${open ? 'open' : ''}`} onClick={() => setOpen(!open)}>
+        <span className={value ? 'ns-val' : 'ns-placeholder'}>{value || 'Ward…'}</span>
+        <span className="ns-caret" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <>
+          <div className="ns-backdrop" onClick={() => setOpen(false)} />
+          <div className="ns-menu">
+            {options.map((w) => (
+              <button
+                type="button"
+                key={w}
+                className={`ns-item ${w === value ? 'active' : ''}`}
+                onClick={() => {
+                  onChange(w);
+                  setOpen(false);
+                }}
+              >
+                <span>{w}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ConfirmDialog({ confirm, onClose }) {
+  if (!confirm) return null;
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        <h3 className="modal-title">{confirm.title}</h3>
+        <p className="modal-sub confirm-msg">{confirm.message}</p>
+        <div className="confirm-actions">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button
+            className={confirm.danger ? 'undo-btn confirm-btn' : 'btn-primary confirm-btn'}
+            onClick={() => { onClose(); confirm.onConfirm(); }}
+          >
+            {confirm.label || 'Confirm'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
+  const [keeper, setKeeper] = useState({});
+
+  const groups = useMemo(() => {
+    const map = {};
+    rows.forEach((r) => {
+      const key = r.phone || '(no phone)';
+      (map[key] = map[key] || []).push(r);
+    });
+    return Object.values(map).filter((g) => g.length > 1);
+  }, [rows]);
+
+  async function doDelete(row) {
+    askConfirm({
+      title: 'Delete entry',
+      message: 'Delete "' + row.name + '" (' + row.phone + ')? This cannot be undone.',
+      label: 'Delete',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.deleteDuplicate(row._id);
+          onSuccess('Duplicate deleted');
+          refresh();
+        } catch (err) {
+          flash('Error: ' + err.message);
+        }
+      },
+    });
+  }
+
+  async function doMerge(group) {
+    const key = group[0].phone || '(no phone)';
+    const keeperId = keeper[key];
+    if (!keeperId) {
+      flash('Select the row to keep first');
+      return;
     }
+    const removeIds = group.filter((r) => r._id !== keeperId).map((r) => r._id);
+    if (!removeIds.length) {
+      flash('Nothing to merge');
+      return;
+    }
+    askConfirm({
+      title: 'Merge duplicates',
+      message:
+        'Merge ' + removeIds.length + ' row(s) into the selected one? The other rows will be deleted and check-in/payment status combined.',
+      label: 'Merge',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.mergeDuplicates(keeperId, removeIds);
+          onSuccess('Merged ' + removeIds.length + ' duplicate(s)');
+          refresh();
+        } catch (err) {
+          flash('Error: ' + err.message);
+        }
+      },
+    });
+  }
+
+  if (!groups.length) {
+    return (
+      <section className="panel">
+        <div className="panel-head">
+          <h2 className="panel-title">Duplicates</h2>
+        </div>
+        <p className="empty-hint">No duplicate phones found.</p>
+      </section>
+    );
   }
 
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2 className="panel-title">Volunteers</h2>
-        <span className="count-badge">{volunteers.length}</span>
+        <h2 className="panel-title">Duplicate entries</h2>
+        <span className="count-badge">{groups.length} groups</span>
       </div>
-      <div className="vol-list">
-        {volunteers.map((v) => (
-          <div key={v.name} className="vol-item">
-            <span className="vol-name">{v.name}</span>
-            {v.role === 'admin' && <span className="badge yes">Admin</span>}
+      <p className="panel-note">
+        Rows sharing the same phone number. Tap the row to keep, then merge — check-in and payment status are combined into it.
+      </p>
+{groups.map((group) => {
+        const key = group[0].phone || '(no phone)';
+
+        return (
+          <div key={key} className="dup-group">
+            <div className="dup-group-head">
+              <span className="dup-phone">{key}</span>
+              <span className="count-badge">{group.length} entries</span>
+            </div>
+            {group.map((r) => (
+              <div
+                key={r._id}
+                className={`card mini-card dup-row ${keeper[key] === r._id ? 'keeper' : ''}`}
+                onClick={() => setKeeper({ ...keeper, [key]: r._id })}
+              >
+                <div className="avatar">{getInitials(r.name)}</div>
+                <div className="card-body">
+                  <div className="card-name">{r.name}</div>
+                  <div className="card-meta">
+                    {r.ward && <span>{r.ward}</span>}
+                    <span className={`badge ${r.attending === 'yes' ? 'yes' : 'no'}`}>{r.attending === 'yes' ? 'Attending' : 'Not attending'}</span>
+                    {r.checkedIn && <span className="badge yes">Checked in</span>}
+                    {r.paid === 'yes' && <span className="badge yes">{r.paidMethod || 'Paid'}</span>}
+                  </div>
+                </div>
+                <div className="mini-right">
+                  {keeper[key] === r._id && <span className="badge yes">Keep</span>}
+                  <button className="undo-btn" onClick={(e) => { e.stopPropagation(); doDelete(r); }}>Delete</button>
+                </div>
+              </div>
+            ))}
+            <button className="btn-primary dup-merge" onClick={() => doMerge(group)}>Merge into selected</button>
           </div>
-        ))}
-      </div>
-      <form className="walkin-form" onSubmit={submit}>
-        <input className="search-input" placeholder="New volunteer name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
-        <input className="search-input" placeholder="Password (default: yuvotsav2026)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
-        <button className="btn-primary" type="submit">Add volunteer</button>
-      </form>
+        );
+      })}
     </section>
+  );
+}
+
+function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onSuccess }) {
+  const [f, setF] = useState({ name: '', password: '', role: 'volunteer' });
+
+  async function submit(e) {
+    e.preventDefault();
+    const role = f.role;
+    onAdd({ name: f.name, role, active: true });
+    onSuccess('Volunteer added: ' + f.name);
+    setF({ name: '', password: '', role: 'volunteer' });
+    try {
+      await api.addVolunteer({
+        name: f.name,
+        password: f.password,
+        role,
+      });
+      onAdded();
+    } catch (err) {
+      onAdded();
+      flash('Error: ' + err.message);
+    }
+  }
+
+  async function toggle(payload) {
+    const patch = {};
+    if (payload.role) patch.role = payload.role;
+    if (payload.active !== undefined) patch.active = payload.active;
+    const label = payload.role ? (payload.role === 'admin' ? 'promoted to admin' : 'demoted to volunteer') : payload.active === false ? 'deactivated' : 'activated';
+    onPatch(payload.name, patch);
+    onSuccess(payload.name + ' ' + label);
+    try {
+      await api.updateVolunteer(payload);
+      onAdded();
+    } catch (err) {
+      onAdded();
+      flash('Error: ' + err.message);
+    }
+  }
+
+  return (
+    <div className="admin-column">
+      <section className="panel">
+        <div className="panel-head">
+          <h2 className="panel-title">Add volunteer</h2>
+        </div>
+        <form className="walkin-form" onSubmit={submit}>
+          <input className="search-input" placeholder="New volunteer name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
+          <input className="search-input" placeholder="Password (default: yuvotsav2026)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+          <label className="role-check">
+            <input type="checkbox" checked={f.role === 'admin'} onChange={(e) => setF({ ...f, role: e.target.checked ? 'admin' : 'volunteer' })} />
+            Make this person an admin
+          </label>
+          <button className="btn-primary" type="submit">Add volunteer</button>
+        </form>
+      </section>
+      <section className="panel">
+        <div className="panel-head">
+          <h2 className="panel-title">Volunteers</h2>
+          <span className="count-badge">{volunteers.length}</span>
+        </div>
+        <div className="vol-list">
+          {volunteers.map((v) => (
+            <div key={v.name} className="vol-card">
+              <div className="avatar">{getInitials(v.name)}</div>
+              <div className="vol-meta">
+                <span className="vol-name">{v.name}</span>
+                <span className="vol-sub">
+                  <span className={`dot ${v.active === false ? 'off' : ''}`} />
+                  {v.active === false ? 'Inactive' : 'Active'}
+                  <span className="vol-sep">•</span>
+                  {v.role === 'admin' ? 'Admin' : 'Volunteer'}
+                </span>
+              </div>
+              <div className="vol-actions">
+                {v.name !== user.name && user.name === SUPER_ADMIN && (
+                  <button
+                    className="vol-toggle"
+                    onClick={() => toggle({ name: v.name, role: v.role === 'admin' ? 'volunteer' : 'admin' })}
+                    title={v.role === 'admin' ? 'Demote to volunteer' : 'Promote to admin'}
+                  >
+                    {v.role === 'admin' ? 'Make volunteer' : 'Make admin'}
+                  </button>
+                )}
+                {v.name !== user.name && !(v.name === SUPER_ADMIN && user.name !== SUPER_ADMIN) && (
+                  <button
+                    className="vol-toggle"
+                    onClick={() => toggle({ name: v.name, active: v.active === false })}
+                  >
+                    {v.active === false ? 'Activate' : 'Deactivate'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -672,7 +952,7 @@ function AdminData({ rows, flash }) {
 
 function Walkin({ user, ward, flash, onDone }) {
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: '', phone: '', ward: ward, method: '', auto: false });
+  const [f, setF] = useState({ name: '', phone: '', ward: ward, method: '' });
 
   async function submit(e) {
     e.preventDefault();
@@ -682,11 +962,11 @@ function Walkin({ user, ward, flash, onDone }) {
         phone: f.phone,
         ward: f.ward,
         method: f.method,
-        autoCheckin: f.auto,
+        autoCheckin: true,
         volunteer: user.name,
       });
       flash('Walk-in added: ' + f.name);
-      setF({ name: '', phone: '', ward: ward, method: '', auto: false });
+      setF({ name: '', phone: '', ward: ward, method: '' });
       setOpen(false);
       onDone();
     } catch (err) {
@@ -696,27 +976,27 @@ function Walkin({ user, ward, flash, onDone }) {
 
   return (
     <div className="walkin">
-      <button className="btn-primary" onClick={() => setOpen(!open)}>
-        {open ? 'Cancel' : '+ Add walk-in'}
+      <button className="btn-primary" onClick={() => setOpen(true)}>
+        + Add walk-in
       </button>
       {open && (
-        <form className="walkin-form" onSubmit={submit}>
+        <div className="modal-backdrop" onClick={() => setOpen(false)}>
+          <div className="modal walkin-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setOpen(false)}>&times;</button>
+            <h3 className="modal-title">Add walk-in</h3>
+            <form className="walkin-form" onSubmit={submit}>
           <input className="search-input" placeholder="Name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
           <input className="search-input" placeholder="Phone" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} required />
-          <select className="search-input" value={f.ward} onChange={(e) => setF({ ...f, ward: e.target.value })} required>
-            <option value="">Ward…</option>
-            {WARDS.map((w) => <option key={w} value={w}>{w}</option>)}
-          </select>
+          <WardSelect value={f.ward} options={WARDS} onChange={(w) => setF({ ...f, ward: w })} />
           <div className="pay-options">
             <button type="button" className={`action-btn ${f.method === 'cash' ? 'on' : ''}`} onClick={() => setF({ ...f, method: 'cash' })}>Cash</button>
             <button type="button" className={`action-btn ${f.method === 'gpay' ? 'on' : ''}`} onClick={() => setF({ ...f, method: 'gpay' })}>GPay</button>
+            <button type="button" className={`action-btn ${f.method === '' ? 'on' : ''}`} onClick={() => setF({ ...f, method: '' })}>Pending</button>
           </div>
-          <label className="check">
-            <input type="checkbox" checked={f.auto} onChange={(e) => setF({ ...f, auto: e.target.checked })} />
-            Auto check-in on save
-          </label>
           <button className="btn-primary" type="submit">Save</button>
-        </form>
+          </form>
+          </div>
+        </div>
       )}
     </div>
   );
