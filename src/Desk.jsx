@@ -901,25 +901,42 @@ function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onS
 
 function AdminData({ rows, flash }) {
   function exportCsv() {
-    const head = ['Name', 'Ward', 'Phone', 'Attending', 'Reason', 'Paid', 'Pay method', 'Checked in', 'Check-in time'];
-    const lines = rows.map((r) => [
-      r.name, r.ward, r.phone,
-      r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : '',
-      r.reason || '',
-      r.paid === 'yes' ? 'Paid' : 'Pending',
-      r.paidMethod || '',
-      r.checkedIn ? 'Yes' : '',
-      r.checkedInAt ? new Date(r.checkedInAt).toLocaleString() : '',
+    const head = ['Name', 'Ward', 'Phone', 'Attending', 'Reason', 'Paid', 'Pay method', 'Checked in'];
+    const sorted = [...rows].sort((a, b) =>
+      String(a.ward || '').localeCompare(String(b.ward || '')) || String(a.name || '').localeCompare(String(b.name || ''))
+    );
+    const clean = (v) => {
+      let s = String(v ?? '');
+      if (/^[=+\-@]/.test(s)) return `="${s.replace(/"/g, '""')}"`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const phoneCell = (p) => {
+      const s = String(p ?? '').replace(/"/g, '""');
+      return s ? `="${s}"` : '""';
+    };
+    const lines = sorted.map((r) => [
+      clean(r.name), clean(r.ward), phoneCell(r.phone),
+      clean(r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : ''),
+      clean(r.reason || ''),
+      clean(r.paid === 'yes' ? 'Paid' : 'Pending'),
+      clean(r.paidMethod || ''),
+      clean(r.checkedIn ? 'Yes' : ''),
     ]);
-    const csv = [head, ...lines]
-      .map((row) => row.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [head.map(clean), ...lines].map((row) => row.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const filename = 'yuvotsav-registrations-' + new Date().toISOString().slice(0, 10) + '.csv';
+    if (window.navigator && window.navigator.msSaveBlob) {
+      window.navigator.msSaveBlob(blob, filename);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'yuvotsav-registrations-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    document.body.removeChild(a);
   }
 
   function syncSheet() {

@@ -449,7 +449,9 @@ function rebuildDeskSheet() {
 // rebuild Sheet 2. Preserves every registration, updating the desk columns.
 function pullAll() {
   if (!CONFIG.WEBHOOK_URL || CONFIG.WEBHOOK_URL.indexOf('your-project') !== -1) {
-    return { success: false, error: 'Set CONFIG.WEBHOOK_URL first.' };
+    var missing = { success: false, error: 'Set CONFIG.WEBHOOK_URL first.' };
+    Logger.log('pullAll: ' + JSON.stringify(missing));
+    return missing;
   }
   var syncUrl = CONFIG.WEBHOOK_URL.replace('/form-submit', '/sync-back');
   var resp = UrlFetchApp.fetch(syncUrl, {
@@ -458,7 +460,9 @@ function pullAll() {
   });
   var code = resp.getResponseCode();
   if (code !== 200) {
-    return { success: false, error: 'sync-back HTTP ' + code + ' ' + resp.getContentText() };
+    var bad = { success: false, error: 'sync-back HTTP ' + code + ' ' + resp.getContentText() };
+    Logger.log('pullAll: ' + JSON.stringify(bad));
+    return bad;
   }
   var data = JSON.parse(resp.getContentText());
 
@@ -484,6 +488,7 @@ function pullAll() {
   }
   sortDeskSheet();
 
+  Logger.log('pullAll: success, total ' + rows.length);
   return { success: true, total: rows.length };
 }
 
