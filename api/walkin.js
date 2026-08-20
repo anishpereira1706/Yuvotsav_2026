@@ -36,7 +36,6 @@ export default async function handler(req, res) {
       checkedInAt: autoCheckin ? new Date() : null,
       checkedInBy: autoCheckin ? String(b.volunteer || '').trim() : '',
       walkIn: true,
-      createdAt: new Date(),
       updatedAt: new Date(),
     };
 
