@@ -969,6 +969,7 @@ function AdminData({ rows, flash }) {
 
 function Walkin({ user, ward, flash, onDone }) {
   const [open, setOpen] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [f, setF] = useState({ name: '', phone: '', ward: ward, method: '' });
 
   async function submit(e) {
@@ -982,9 +983,9 @@ function Walkin({ user, ward, flash, onDone }) {
         autoCheckin: true,
         volunteer: user.name,
       });
-      flash('Walk-in added: ' + f.name);
       setF({ name: '', phone: '', ward: ward, method: '' });
       setOpen(false);
+      setSuccess(true);
       onDone();
     } catch (err) {
       flash('Error: ' + err.message);
@@ -996,6 +997,7 @@ function Walkin({ user, ward, flash, onDone }) {
       <button className="btn-primary" onClick={() => setOpen(true)}>
         + Add walk-in
       </button>
+      <SuccessOverlay show={success} message="Walk-in added!" onDone={() => setSuccess(false)} />
       {open && (
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <div className="modal walkin-modal" onClick={(e) => e.stopPropagation()}>
