@@ -36,14 +36,11 @@ export default async function handler(req, res) {
       checkedInAt: autoCheckin ? new Date() : null,
       checkedInBy: autoCheckin ? String(b.volunteer || '').trim() : '',
       walkIn: true,
+      createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    await db.collection('registrations').updateOne(
-      { phone },
-      { $set: doc, $setOnInsert: { createdAt: new Date() } },
-      { upsert: true }
-    );
+    await db.collection('registrations').insertOne(doc);
 
     res.status(200).json({ success: true });
   } catch (err) {
