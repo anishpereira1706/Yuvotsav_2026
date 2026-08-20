@@ -69,6 +69,7 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
+    if (view !== VIEWS.desk) return undefined;
     const id = setInterval(fetchData, CONFIG.REFRESH_SECONDS * 1000);
     const onFocus = () => {
       if (document.visibilityState === 'visible') fetchData();
@@ -80,7 +81,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', onFocus);
       window.removeEventListener('focus', onFocus);
     };
-  }, [fetchData]);
+  }, [fetchData, view]);
 
   const wards = useMemo(() => {
     const set = {};
