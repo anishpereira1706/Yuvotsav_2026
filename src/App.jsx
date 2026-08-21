@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import CONFIG from './config';
-import { APP_KEY } from './api';
+import { APP_KEY, trackLogin } from './api';
 import StatCards from './components/StatCards';
 import WardProgress from './components/WardProgress';
 import RegistrationList from './components/RegistrationList';
@@ -36,6 +36,20 @@ export default function App() {
       return null;
     }
   });
+  const [trackerOk, setTrackerOk] = useState(() => {
+    try {
+      return sessionStorage.getItem('yuvotsav_tracker_ok') === '1';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleTrackerUnlock = () => {
+    setTrackerOk(true);
+    try {
+      sessionStorage.setItem('yuvotsav_tracker_ok', '1');
+    } catch (e) {}
+  };
 
   const handleLogin = (u) => {
     setUser(u);
@@ -195,6 +209,7 @@ export default function App() {
           {view === VIEWS.landing && <Landing onSelect={setView} />}
 
           {view === VIEWS.tracker && (
+            trackerOk ? (
             <>
               {error && (
                 <div className="banner error">
@@ -257,6 +272,9 @@ export default function App() {
                 </>
               )}
             </>
+            ) : (
+              <TrackerGate onUnlock={handleTrackerUnlock} />
+            )
           )}
 
           {view === VIEWS.desk && <Desk user={user} onLogin={handleLogin} data={data} refresh={fetchData} applyLocalPatch={applyLocalPatch} />}
@@ -273,6 +291,55 @@ export default function App() {
 
 function formatTime(d) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function TrackerGate({ onUnlock }) {
+  const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setErr('');
+    try {
+      await trackLogin(password);
+      onUnlock();
+    } catch (ex) {
+      setErr(ex.message || 'Wrong password');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="panel tracker-gate">
+      <h2 className="panel-title">Tracker Access</h2>
+      <p className="login-sub">Enter the shared password to view live registrations.</p>
+      <form onSubmit={submit}>
+        <div className="pw-wrap">
+          <input
+            className="search-input"
+            type={show ? 'text' : 'password'}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoFocus
+          />
+          <button type="button" className="pw-eye" onClick={() => setShow(!show)} aria-label="Show password">
+            {show ? '🙈' : '👁'}
+          </button>
+        </div>
+        {err && <div className="banner error">{err}</div>}
+        <button className="btn-primary" type="submit" disabled={busy}>
+          {busy ? 'Checking…' : 'View tracker'}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 function computeStats(rows) {

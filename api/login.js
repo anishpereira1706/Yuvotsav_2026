@@ -12,6 +12,17 @@ export default async function handler(req, res) {
   }
   try {
     const b = req.body || {};
+
+    // Tracker gate: shared password (TRACKER_PASSWORD env or default), no session.
+    if (b.tracker === true) {
+      const expected = process.env.TRACKER_PASSWORD || 'yuvotsav2026';
+      if (String(b.password || '') !== expected) {
+        await new Promise((r) => setTimeout(r, 400));
+        return res.status(401).json({ success: false, error: 'Wrong password' });
+      }
+      return res.status(200).json({ success: true });
+    }
+
     const name = String(b.name || '').trim();
     const password = String(b.password || '');
 

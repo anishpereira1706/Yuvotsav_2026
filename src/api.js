@@ -33,6 +33,10 @@ export function login(name, password) {
   return request('/api/login', { method: 'POST', body: JSON.stringify({ name, password }) });
 }
 
+export function trackLogin(password) {
+  return request('/api/login', { method: 'POST', body: JSON.stringify({ tracker: true, password }) });
+}
+
 export function volunteers() {
   return fetch(BASE + '/api/volunteers?cache=' + Date.now(), {
     headers: { 'x-app-key': APP_KEY },
