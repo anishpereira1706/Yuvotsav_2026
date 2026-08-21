@@ -35,7 +35,15 @@ body {
   min-height: 100vh;
 }
 
-.page { max-width: 640px; margin: 0 auto; }
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 200px);
+}
+
+.page > main { flex: 1; }
 
 /* ---------- Animated wave background ---------- */
 .wave-bg {
