@@ -71,6 +71,6 @@ export function mergeDuplicates(keeperId, removeIds) {
   return request('/api/duplicates', { method: 'POST', body: JSON.stringify({ action: 'merge', keeperId, removeIds }) });
 }
 
-export function changePassword(oldPassword, newPassword) {
-  return request('/api/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) });
+export function changePassword(name, newPassword) {
+  return request('/api/change-password', { method: 'POST', body: JSON.stringify({ name, newPassword }) });
 }
