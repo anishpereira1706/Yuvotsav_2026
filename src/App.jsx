@@ -138,7 +138,6 @@ export default function App() {
     });
   }, []);
 
-  const brandSub = view === VIEWS.landing ? 'Choose a view' : view === VIEWS.desk ? 'Registration Desk' : 'Live Registration Tracker';
 
   return (
     <>
@@ -167,8 +166,7 @@ export default function App() {
         <div className="topbar-inner">
           <div>
             <div className="brand-kicker">Yuvotsav</div>
-            <div className="brand-name">2026 <span className="accent">·</span> Youth Day</div>
-            <div className="brand-sub">{brandSub}</div>
+            <div className="brand-name">2026</div>
           </div>
           {view === VIEWS.tracker && (
             <div className={`live-pill ${error ? 'off' : ''}`}>
