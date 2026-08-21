@@ -25,6 +25,9 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
   const [confirm, setConfirm] = useState(null);
   const [tab, setTab] = useState('find');
   const [adminSection, setAdminSection] = useState('find');
+  const [pwModal, setPwModal] = useState(false);
+  const [pwOld, setPwOld] = useState('');
+  const [pwNew, setPwNew] = useState('');
 
   useEffect(() => {
     try {
@@ -68,6 +71,23 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
     try {
       await api.undoCheckin({ id: row._id, phone: row.phone });
       refresh();
+    } catch (err) {
+      flash('Error: ' + err.message);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!pwOld.trim() || !pwNew.trim()) {
+      flash('Fill in both fields');
+      return;
+    }
+    try {
+      await api.changePassword(pwOld.trim(), pwNew.trim());
+      setPwModal(false);
+      setPwOld('');
+      setPwNew('');
+      setSuccessMsg('Password changed!');
+      setSuccess(true);
     } catch (err) {
       flash('Error: ' + err.message);
     }
@@ -267,6 +287,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
             </nav>
             <div className="admin-sidebar-foot">
               <button className="refresh-btn" onClick={refresh} title="Refresh">↻</button>
+              {user.name === SUPER_ADMIN && <button className="refresh-btn" onClick={() => setPwModal(true)} title="Change password">🔑</button>}
               <button className="logout-btn" onClick={() => onLogin(null)}>Sign out</button>
             </div>
           </aside>
@@ -305,6 +326,19 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
         </div>
         {deskModal}
         <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+        {pwModal && (
+          <div className="modal-backdrop" onClick={() => setPwModal(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setPwModal(false)} aria-label="Close">×</button>
+              <h3 className="modal-title">Change Password</h3>
+              <form className="walkin-form" onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }}>
+                <input className="search-input" type="password" placeholder="Current password" value={pwOld} onChange={(e) => setPwOld(e.target.value)} required />
+                <input className="search-input" type="password" placeholder="New password" value={pwNew} onChange={(e) => setPwNew(e.target.value)} required />
+                <button className="btn-primary" type="submit">Update Password</button>
+              </form>
+            </div>
+          </div>
+        )}
         <SuccessOverlay show={success} message={successMsg} onDone={() => setSuccess(false)} />
       </div>
     );
