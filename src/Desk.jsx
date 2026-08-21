@@ -577,7 +577,7 @@ function DeskModal({ row, volunteer, isAdmin, updateMode, onUndo, onClose, onSav
               <span>G-Pay</span>
             </button>
             <button type="button" className={`pay-opt ${method === 'pending' ? 'on' : ''}`} onClick={() => setMethod('pending')}>
-              <span className="po-ico">◌</span>
+              <span className="po-ico">P</span>
               <span>Pending</span>
             </button>
           </div>
