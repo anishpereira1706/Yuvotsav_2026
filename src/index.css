@@ -1163,11 +1163,61 @@ select.search-input:hover { border-color: var(--purple); }
   .ns-item:hover { background: var(--purple-soft); }
 }
 
+.ns-item-super {
+  background: linear-gradient(135deg, #f4f0ff 0%, #ede9fe 50%, #f4f0ff 100%);
+  border: 1px solid var(--purple-line);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ns-item-super::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  transform: skewX(-20deg);
+  animation: superShimmer 3s ease-in-out infinite;
+}
+
+@keyframes superShimmer {
+  0% { left: -75%; }
+  100% { left: 125%; }
+}
+
+.ns-item-super:hover {
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+.ns-item-super.active {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe, #ede9fe);
+}
+
 .gh-icon {
   display: inline-flex;
-  color: var(--ink);
-  opacity: 0.7;
+  color: var(--purple-deep);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.3));
+}
+
+.ns-super-name {
+  font-weight: 700;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+}
+
+.gh-icon svg {
+  transition: transform 0.2s ease;
+}
+
+.ns-item-super:hover .gh-icon svg {
+  transform: rotate(-10deg) scale(1.15);
 }
 
 .desk-login .search-input:focus {
