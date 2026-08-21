@@ -681,6 +681,42 @@ select.search-input:hover { border-color: var(--purple); }
   letter-spacing: 0.5px;
 }
 
+/* ---------- Mobile topbar ---------- */
+@media (max-width: 639px) {
+  .topbar-inner {
+    padding: 12px 14px 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .brand-kicker {
+    font-size: 9px;
+    letter-spacing: 2px;
+    margin-bottom: 1px;
+  }
+  .brand-name {
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+  .brand-sub {
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .topbar-inner.sub {
+    padding: 6px 14px 10px;
+    gap: 6px;
+  }
+  .nav { gap: 4px; }
+  .nav-btn {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+  .live-pill {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+}
+
 /* ---------- Desktop ---------- */
 @media (min-width: 640px) {
   .stats { grid-template-columns: repeat(4, 1fr); }
