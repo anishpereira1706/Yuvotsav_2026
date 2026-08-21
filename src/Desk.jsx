@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import CONFIG from './config';
 import * as api from './api';
 import SuccessOverlay from './SuccessOverlay';
@@ -234,7 +234,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
     ];
     return (
       <div className="desk">
-        {msg && <div className="banner ok">{msg}</div>}
+        {msg && <div className="toast-top-right">{msg}</div>}
         <div className="admin-shell">
           <aside className="admin-sidebar">
             <div className="admin-sidebar-head">
@@ -297,11 +297,9 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
         <SuccessOverlay show={success} message={successMsg} onDone={() => setSuccess(false)} />
       </div>
     );
-  }
-
-  return (
+  }    return (
     <div className="desk">
-      {msg && <div className="banner ok">{msg}</div>}
+      {msg && <div className="toast-top-right">{msg}</div>}
 
       <div className="desk-top">
         <span className="desk-user">{user.name}</span>
@@ -682,13 +680,20 @@ function ConfirmDialog({ confirm, onClose }) {
   );
 }
 
+function normalizePhone(p) {
+  const digits = String(p || '').replace(/\D/g, '');
+  // Strip leading country-code 91 (India) to match +91 and bare 91 variants
+  return digits.replace(/^91/, '');
+}
+
 function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
   const [keeper, setKeeper] = useState({});
 
   const groups = useMemo(() => {
     const map = {};
     rows.forEach((r) => {
-      const key = r.phone || '(no phone)';
+      const norm = normalizePhone(r.phone);
+      const key = norm || '(no phone)';
       (map[key] = map[key] || []).push(r);
     });
     return Object.values(map).filter((g) => g.length > 1);
@@ -713,7 +718,7 @@ function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
   }
 
   async function doMerge(group) {
-    const key = group[0].phone || '(no phone)';
+    const key = normalizePhone(group[0].phone) || '(no phone)';
     const keeperId = keeper[key];
     if (!keeperId) {
       flash('Select the row to keep first');
@@ -763,7 +768,7 @@ function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
         Rows sharing the same phone number. Tap the row to keep, then merge — check-in and payment status are combined into it.
       </p>
 {groups.map((group) => {
-        const key = group[0].phone || '(no phone)';
+        const key = normalizePhone(group[0].phone) || '(no phone)';
 
         return (
           <div key={key} className="dup-group">
@@ -901,22 +906,44 @@ function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onS
 }
 
 function AdminData({ rows, flash }) {
-  function buildSheet(data, sheetName) {
+  function buildSheet(data, sheetName, columns) {
+    if (!data || data.length === 0) {
+      flash('No data to export for this filter');
+      return;
+    }
     const sorted = [...data].sort((a, b) =>
       String(a.ward || '').localeCompare(String(b.ward || '')) || String(a.name || '').localeCompare(String(b.name || ''))
     );
-    const wsRows = sorted.map((r) => ({
-      'Name': r.name || '',
-      'Ward': r.ward || '',
-      'Phone': r.phone || '',
-      'Attending': r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : '',
-      'Reason': r.reason || '',
-      'Paid': r.paid === 'yes' ? 'Paid' : 'Pending',
-      'Pay method': r.paidMethod || '',
-      'Checked in': r.checkedIn ? 'Yes' : '',
-    }));
+    const allCols = [
+      { key: 'Sl No', fn: (r, i) => i + 1 },
+      { key: 'Name', fn: (r) => r.name || '' },
+      { key: 'Ward', fn: (r) => r.ward || '' },
+      { key: 'Phone', fn: (r) => r.phone || '' },
+      { key: 'Attending', fn: (r) => r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : '' },
+      { key: 'Not Attended', fn: (r) => !r.checkedIn && r.attending === 'yes' ? 'Not Attended' : '' },
+      { key: 'Reason', fn: (r) => r.reason || '' },
+      { key: 'Paid', fn: (r) => r.paid === 'yes' ? 'Paid' : 'Pending' },
+      { key: 'Pay method', fn: (r) => r.paidMethod || '' },
+      { key: 'Checked in', fn: (r) => r.checkedIn ? 'Yes' : '' },
+    ];
+    const cols = columns ? allCols.filter((c) => columns.includes(c.key)) : allCols;
+    const wsRows = sorted.map((r, i) => {
+      const row = {};
+      cols.forEach((c) => { row[c.key] = c.fn(r, i); });
+      return row;
+    });
     const ws = XLSX.utils.json_to_sheet(wsRows);
     const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellRef = XLSX.utils.encode_cell({ r: range.s.r, c: C });
+      if (ws[cellRef]) {
+        ws[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+          fill: { fgColor: { rgb: '7C3AED' } },
+          alignment: { horizontal: 'center' },
+        };
+      }
+    }
     for (let C = range.s.c; C <= range.e.c; ++C) {
       const header = ws[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
       if (header && header.v === 'Phone') {
@@ -944,13 +971,13 @@ function AdminData({ rows, flash }) {
 
   function exportAttending() {
     const data = rows.filter((r) => r.attending === 'yes');
-    buildSheet(data, 'Attending');
+    buildSheet(data, 'Attending', ['Sl No', 'Name', 'Ward', 'Phone', 'Attending']);
     flash('Attending list downloaded (' + data.length + ' entries)');
   }
 
   function exportNotAttending() {
     const data = rows.filter((r) => r.attending === 'no');
-    buildSheet(data, 'Not Attending');
+    buildSheet(data, 'Not Attending', ['Sl No', 'Name', 'Ward', 'Phone', 'Attending', 'Reason']);
     flash('Not attending list downloaded (' + data.length + ' entries)');
   }
 
@@ -962,60 +989,49 @@ function AdminData({ rows, flash }) {
 
   function exportRegisteredNotAttended() {
     const data = rows.filter((r) => r.attending === 'yes' && !r.checkedIn);
-    buildSheet(data, 'Registered Not Attended');
+    buildSheet(data, 'Registered Not Attended', ['Sl No', 'Name', 'Ward', 'Phone', 'Attending', 'Not Attended']);
     flash('Registered but not attended list downloaded (' + data.length + ' entries)');
   }
 
-  function syncSheet() {
+  async function syncSheet() {
     const url = CONFIG.SHEET_SYNC_URL + '?sync=1';
-    window.open(url, '_blank');
+    await fetch(url);
   }
 
-return (
+  return (
+    <>
     <section className="panel">
       <div className="panel-head">
         <h2 className="panel-title">Data & Backup</h2>
       </div>
-      <div className="stats-cards">
-        <div className="stat-card">
-          <div className="stat-value">{data?.stats?.total || 0}</div>
-          <div className="stat-label">Total</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{data?.stats?.attending || 0}</div>
-          <div className="stat-label">Attending</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{data?.stats?.notAttending || 0}</div>
-          <div className="stat-label">Not Attending</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{data?.stats?.unknown || 0}</div>
-          <div className="stat-label">Other</div>
+      <div className="vol-list">
+        <div className="vol-item">
+          <span className="vol-name">Registrations</span>
+          <span className="count-badge">{rows.length}</span>
         </div>
       </div>
-      <div className="panel-body">
-        <div className="vol-list">
-          <div className="vol-item">
-            <span className="vol-name">Registrations</span>
-            <span className="count-badge">{data?.rows?.length || 0}</span>
-          </div>
-        </div>
-        <div className="pay-options">
-          <button type="button" className="action-btn on" onClick={exportAttending}>✓ Attending</button>
-          <button type="button" className="action-btn on" onClick={exportNotAttending}>✗ Not Attending</button>
-          <button type="button" className="action-btn on" onClick={exportCheckedIn}>📋 Event Day Attended</button>
-          <button type="button" className="action-btn on" onClick={exportRegisteredNotAttended}>⏳ Not Attended</button>
-        </div>
-        <div className="pay-options" style={{ marginTop: 10 }}>
-          <button type="button" className="action-btn on" onClick={exportAll}>Download All (Excel)</button>
-          <button type="button" className="action-btn on" onClick={() => { syncSheet(); flash('Opening sync… check the new tab'); }}>Sync to Google Sheet</button>
-        </div>
+      <div className="pay-options">
+        <button type="button" className="action-btn on" onClick={exportAttending}>✓ Attending</button>
+        <button type="button" className="action-btn on" onClick={exportNotAttending}>✗ Not Attending</button>
+        <button type="button" className="action-btn on" onClick={exportCheckedIn}>📋 Event Day Attended</button>
+        <button type="button" className="action-btn on" onClick={exportRegisteredNotAttended}>⏳ Not Attended</button>
+      </div>
+      <div className="pay-options" style={{ marginTop: 10 }}>
+        <button type="button" className="action-btn on" onClick={exportAll}>Download All (Excel)</button>
+      </div>
+    </section>
+    <section className="panel">
+      <div className="panel-head">
+        <h2 className="panel-title">Google Sheet Sync</h2>
+      </div>
+      <div className="pay-options">
+        <button type="button" className="action-btn on" onClick={async () => { await syncSheet(); flash('Sync complete!'); }}>Sync to Google Sheet</button>
       </div>
       <p className="panel-note">
-        Excel files include auto-sized columns and phone numbers stored as text. Sync copies check-in & payment status to Sheet 2.
+        Sync copies check-in &amp; payment status to Sheet 2.
       </p>
     </section>
+    </>
   );
 }
 

@@ -1301,40 +1301,6 @@ select.search-input:hover { border-color: var(--purple); }
   font-size: 11px;
 }
 
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  background: var(--card);
-  border: 1px solid var(--purple-line);
-  border-radius: 12px;
-  padding: 16px 12px;
-  text-align: center;
-  transition: box-shadow 0.15s ease;
-}
-
-.stat-card:hover { box-shadow: var(--shadow-sm); }
-
-.stat-value {
-  font-family: var(--serif);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--grad);
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Keep existing styles */
 .dup-group {
   border: 1px solid var(--purple-line);
   border-radius: 14px;
@@ -1446,6 +1412,26 @@ select.search-input:hover { border-color: var(--purple); }
   background: var(--yes-bg);
   color: var(--yes);
   border: 1px solid rgba(21, 128, 61, 0.2);
+}
+
+.toast-top-right {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: var(--yes-bg);
+  color: var(--yes);
+  border: 1px solid rgba(21, 128, 61, 0.2);
+  border-radius: var(--radius);
+  padding: 13px 20px;
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: toastIn 0.3s ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .desk-card {
@@ -1682,9 +1668,13 @@ select.search-input:hover { border-color: var(--purple); }
 .walkin-modal .walkin-form { margin-top: 14px; }
 .walkin-modal .modal-close { top: 12px; right: 12px; }
 
-.pay-options { display: flex; gap: 8px; }
-.pay-options .action-btn { flex: 1; }
+.pay-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.pay-options .action-btn { flex: 1 1 calc(50% - 4px); min-width: 0; text-align: center; font-size: 12px; padding: 10px 6px; }
 .pay-options .action-btn.on { background: var(--grad); color: #fff; border-color: transparent; }
+
+@media (min-width: 480px) {
+  .pay-options .action-btn { flex: 1 1 auto; }
+}
 
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
 
