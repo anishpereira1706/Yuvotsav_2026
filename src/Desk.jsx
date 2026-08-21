@@ -784,9 +784,11 @@ function AdminDuplicates({ user, rows, refresh, flash, onSuccess, askConfirm }) 
         <h2 className="panel-title">Duplicate entries</h2>
         <span className="count-badge">{groups.length} groups</span>
       </div>
-      <p className="panel-note">
-        Rows sharing the same phone number. Tap the row to keep, then merge — check-in and payment status are combined into it.
-      </p>
+      {isSuper && (
+        <p className="panel-note">
+          Rows sharing the same phone number. Tap the row to keep, then merge — check-in and payment status are combined into it.
+        </p>
+      )}
 {groups.map((group) => {
         const key = normalizePhone(group[0].phone) || '(no phone)';
 
