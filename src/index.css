@@ -1163,6 +1163,13 @@ select.search-input:hover { border-color: var(--purple); }
   .ns-item:hover { background: var(--purple-soft); }
 }
 
+.gh-icon {
+  display: inline-flex;
+  color: var(--ink);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
 .desk-login .search-input:focus {
   outline: none;
   border-color: var(--purple);
