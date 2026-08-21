@@ -1076,6 +1076,15 @@ select.search-input:hover { border-color: var(--purple); }
   padding-right: 38px;
 }
 
+.pw-wrap { position: relative; width: 100%; }
+.pw-wrap .search-input { width: 100%; padding-right: 42px; }
+.pw-eye {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; padding: 4px;
+}
+.pw-eye:hover { color: var(--purple); }
+
 /* Custom name dropdown (replaces native select) */
 .ns { position: relative; width: 100%; }
 
