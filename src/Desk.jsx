@@ -271,6 +271,7 @@ export default function Desk({ user, onLogin, data, refresh, applyLocalPatch }) 
             {adminSection === 'payments' && <PaymentsTab rows={rows} onOpen={(r) => { setSelectedFrom('payments'); setSelected(r); }} />}
             {adminSection === 'duplicates' && (
               <AdminDuplicates
+                user={user}
                 rows={rows}
                 refresh={refresh}
                 flash={flash}
@@ -686,7 +687,8 @@ function normalizePhone(p) {
   return digits.replace(/^91/, '');
 }
 
-function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
+function AdminDuplicates({ user, rows, refresh, flash, onSuccess, askConfirm }) {
+  const isSuper = user && user.name === 'Anish Pereira';
   const [keeper, setKeeper] = useState({});
 
   const groups = useMemo(() => {
@@ -794,11 +796,11 @@ function AdminDuplicates({ rows, refresh, flash, onSuccess, askConfirm }) {
                 </div>
                 <div className="mini-right">
                   {keeper[key] === r._id && <span className="badge yes">Keep</span>}
-                  <button className="undo-btn" onClick={(e) => { e.stopPropagation(); doDelete(r); }}>Delete</button>
+                  {isSuper && <button className="undo-btn" onClick={(e) => { e.stopPropagation(); doDelete(r); }}>Delete</button>}
                 </div>
               </div>
             ))}
-            <button className="btn-primary dup-merge" onClick={() => doMerge(group)}>Merge into selected</button>
+            {isSuper && <button className="btn-primary dup-merge" onClick={() => doMerge(group)}>Merge into selected</button>}
           </div>
         );
       })}

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from '../server/lib/db.js';
-import { requireVolunteer } from '../server/lib/auth.js';
+import { requireVolunteer, isSuperAdmin } from '../server/lib/auth.js';
 import { applyCors, isPreflight, sendPreflight } from '../server/lib/cors.js';
 
 // Admin-only duplicate management.
@@ -15,6 +15,9 @@ export default async function handler(req, res) {
   try {
     const session = await requireVolunteer(req, res, { admin: true });
     if (!session) return;
+    if (!isSuperAdmin(session.name)) {
+      return res.status(403).json({ success: false, error: 'Super admin only' });
+    }
     const b = req.body || {};
     const db = await getDb();
     const col = db.collection('registrations');
