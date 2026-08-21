@@ -800,7 +800,8 @@ function AdminDuplicates({ user, rows, refresh, flash, onSuccess, askConfirm }) 
               <div
                 key={r._id}
                 className={`card mini-card dup-row ${keeper[key] === r._id ? 'keeper' : ''}`}
-                onClick={() => setKeeper({ ...keeper, [key]: r._id })}
+                onClick={isSuper ? () => setKeeper({ ...keeper, [key]: r._id }) : undefined}
+                style={!isSuper ? { cursor: 'default' } : undefined}
               >
                 <div className="avatar">{getInitials(r.name)}</div>
                 <div className="card-body">
@@ -813,7 +814,7 @@ function AdminDuplicates({ user, rows, refresh, flash, onSuccess, askConfirm }) 
                   </div>
                 </div>
                 <div className="mini-right">
-                  {keeper[key] === r._id && <span className="badge yes">Keep</span>}
+                  {isSuper && keeper[key] === r._id && <span className="badge yes">Keep</span>}
                   {isSuper && <button className="undo-btn" onClick={(e) => { e.stopPropagation(); doDelete(r); }}>Delete</button>}
                 </div>
               </div>
