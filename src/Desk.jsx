@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import CONFIG from './config';
 import * as api from './api';
 import SuccessOverlay from './SuccessOverlay';
@@ -900,43 +901,69 @@ function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onS
 }
 
 function AdminData({ rows, flash }) {
-  function exportCsv() {
-    const head = ['Name', 'Ward', 'Phone', 'Attending', 'Reason', 'Paid', 'Pay method', 'Checked in'];
-    const sorted = [...rows].sort((a, b) =>
+  function buildSheet(data, sheetName) {
+    const sorted = [...data].sort((a, b) =>
       String(a.ward || '').localeCompare(String(b.ward || '')) || String(a.name || '').localeCompare(String(b.name || ''))
     );
-    const clean = (v) => {
-      let s = String(v ?? '');
-      if (/^[=+\-@]/.test(s)) return `="${s.replace(/"/g, '""')}"`;
-      return `"${s.replace(/"/g, '""')}"`;
-    };
-    const phoneCell = (p) => {
-      const s = String(p ?? '').replace(/"/g, '""');
-      return s ? `="${s}"` : '""';
-    };
-    const lines = sorted.map((r) => [
-      clean(r.name), clean(r.ward), phoneCell(r.phone),
-      clean(r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : ''),
-      clean(r.reason || ''),
-      clean(r.paid === 'yes' ? 'Paid' : 'Pending'),
-      clean(r.paidMethod || ''),
-      clean(r.checkedIn ? 'Yes' : ''),
-    ]);
-    const csv = [head.map(clean), ...lines].map((row) => row.join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const filename = 'yuvotsav-registrations-' + new Date().toISOString().slice(0, 10) + '.csv';
-    if (window.navigator && window.navigator.msSaveBlob) {
-      window.navigator.msSaveBlob(blob, filename);
-      return;
+    const wsRows = sorted.map((r) => ({
+      'Name': r.name || '',
+      'Ward': r.ward || '',
+      'Phone': r.phone || '',
+      'Attending': r.attending === 'yes' ? 'Yes' : r.attending === 'no' ? 'No' : '',
+      'Reason': r.reason || '',
+      'Paid': r.paid === 'yes' ? 'Paid' : 'Pending',
+      'Pay method': r.paidMethod || '',
+      'Checked in': r.checkedIn ? 'Yes' : '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(wsRows);
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const header = ws[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
+      if (header && header.v === 'Phone') {
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+          const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+          if (cell) { cell.t = 's'; cell.z = '@'; }
+        }
+      }
     }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const colWidths = Object.keys(wsRows[0] || {}).map((key) => {
+      const maxLen = Math.max(key.length, ...wsRows.map((r) => String(r[key] || '').length));
+      return { wch: Math.min(maxLen + 2, 30) };
+    });
+    ws['!cols'] = colWidths;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `yuvotsav-${sheetName.toLowerCase().replace(/\s+/g, '-')}-${date}.xlsx`);
+  }
+
+  function exportAll() {
+    buildSheet(rows, 'All Registrations');
+    flash('Excel downloaded');
+  }
+
+  function exportAttending() {
+    const data = rows.filter((r) => r.attending === 'yes');
+    buildSheet(data, 'Attending');
+    flash('Attending list downloaded (' + data.length + ' entries)');
+  }
+
+  function exportNotAttending() {
+    const data = rows.filter((r) => r.attending === 'no');
+    buildSheet(data, 'Not Attending');
+    flash('Not attending list downloaded (' + data.length + ' entries)');
+  }
+
+  function exportCheckedIn() {
+    const data = rows.filter((r) => r.checkedIn);
+    buildSheet(data, 'Event Day Attended');
+    flash('Event day attended list downloaded (' + data.length + ' entries)');
+  }
+
+  function exportRegisteredNotAttended() {
+    const data = rows.filter((r) => r.attending === 'yes' && !r.checkedIn);
+    buildSheet(data, 'Registered Not Attended');
+    flash('Registered but not attended list downloaded (' + data.length + ' entries)');
   }
 
   function syncSheet() {
@@ -944,24 +971,49 @@ function AdminData({ rows, flash }) {
     window.open(url, '_blank');
   }
 
-  return (
+return (
     <section className="panel">
       <div className="panel-head">
         <h2 className="panel-title">Data & Backup</h2>
       </div>
-      <div className="vol-list">
-        <div className="vol-item">
-          <span className="vol-name">Registrations</span>
-          <span className="count-badge">{rows.length}</span>
+      <div className="stats-cards">
+        <div className="stat-card">
+          <div className="stat-value">{data?.stats?.total || 0}</div>
+          <div className="stat-label">Total</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{data?.stats?.attending || 0}</div>
+          <div className="stat-label">Attending</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{data?.stats?.notAttending || 0}</div>
+          <div className="stat-label">Not Attending</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{data?.stats?.unknown || 0}</div>
+          <div className="stat-label">Other</div>
         </div>
       </div>
-      <div className="pay-options">
-        <button type="button" className="action-btn on" onClick={() => { exportCsv(); flash('CSV downloaded'); }}>Download CSV</button>
-        <button type="button" className="action-btn on" onClick={() => { syncSheet(); flash('Opening sync… check the new tab'); }}>Sync to Google Sheet</button>
+      <div className="panel-body">
+        <div className="vol-list">
+          <div className="vol-item">
+            <span className="vol-name">Registrations</span>
+            <span className="count-badge">{data?.rows?.length || 0}</span>
+          </div>
+        </div>
+        <div className="pay-options">
+          <button type="button" className="action-btn on" onClick={exportAttending}>✓ Attending</button>
+          <button type="button" className="action-btn on" onClick={exportNotAttending}>✗ Not Attending</button>
+          <button type="button" className="action-btn on" onClick={exportCheckedIn}>📋 Event Day Attended</button>
+          <button type="button" className="action-btn on" onClick={exportRegisteredNotAttended}>⏳ Not Attended</button>
+        </div>
+        <div className="pay-options" style={{ marginTop: 10 }}>
+          <button type="button" className="action-btn on" onClick={exportAll}>Download All (Excel)</button>
+          <button type="button" className="action-btn on" onClick={() => { syncSheet(); flash('Opening sync… check the new tab'); }}>Sync to Google Sheet</button>
+        </div>
       </div>
       <p className="panel-note">
-        Sync copies check-in &amp; payment status to Sheet 2. If it opens a login/blank page, re-publish the Apps Script
-        and update <code>config.js</code>.
+        Excel files include auto-sized columns and phone numbers stored as text. Sync copies check-in & payment status to Sheet 2.
       </p>
     </section>
   );

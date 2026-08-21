@@ -1301,6 +1301,40 @@ select.search-input:hover { border-color: var(--purple); }
   font-size: 11px;
 }
 
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--purple-line);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  transition: box-shadow 0.15s ease;
+}
+
+.stat-card:hover { box-shadow: var(--shadow-sm); }
+
+.stat-value {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--grad);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Keep existing styles */
 .dup-group {
   border: 1px solid var(--purple-line);
   border-radius: 14px;
