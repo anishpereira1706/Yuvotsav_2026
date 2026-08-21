@@ -906,7 +906,7 @@ function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onS
         </div>
         <div className="vol-list">
           {volunteers.map((v) => (
-            <div key={v.name} className="vol-card">
+            <div key={v.name} className="vol-card" onClick={() => { if (user.name === SUPER_ADMIN) { setPwTarget(v.name); setPwNew(''); } }} style={{ cursor: user.name === SUPER_ADMIN ? 'pointer' : 'default' }}>
               <div className="avatar">{getInitials(v.name)}</div>
               <div className="vol-meta">
                 <span className="vol-name">{v.name}</span>
@@ -918,9 +918,6 @@ function AdminVolunteers({ user, volunteers, onAdded, onPatch, onAdd, flash, onS
                 </span>
               </div>
               <div className="vol-actions">
-                {user.name === SUPER_ADMIN && (
-                  <button className="vol-toggle" onClick={() => { setPwTarget(v.name); setPwNew(''); }}>🔑 Password</button>
-                )}
                 {v.name !== user.name && user.name === SUPER_ADMIN && (
                   <button
                     className="vol-toggle"
